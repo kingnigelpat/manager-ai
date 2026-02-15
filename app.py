@@ -58,12 +58,15 @@ def init_db():
 init_db()
 
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- REAL AI INTEGRATION ---
 # using OpenRouter (compatible with OpenAI SDK)
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key=os.getenv("OPENAI_API_KEY")
 )
 
 class AI_Engine:
