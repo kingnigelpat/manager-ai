@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join The Manager AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container auth-container">
+        <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
+            <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
+            <span class="logo-text">The Manager AI</span>
+        </div>
+
+        <div class="hero-text" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Create Account</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Join the future of content creation</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background-color: rgba(239, 68, 68, 0.1); color: #f87171; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.2);">
+            {% for message in messages %}
+            <p style="margin: 0; font-size: 0.9rem;">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="primary-btn" style="width: 100%; margin-top: 10px;">
+                Get Started <i class="fa-solid fa-rocket" style="margin-left: 8px;"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

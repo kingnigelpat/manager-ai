@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - The Manager AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container auth-container">
+        <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
+            <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
+            <span class="logo-text">The Manager AI</span>
+        </div>
+
+        <div class="hero-text" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Welcome Back</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Login to access your dashboard</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div
+            style="background-color: {{ 'rgba(16, 185, 129, 0.1)' if 'successful' in message else 'rgba(239, 68, 68, 0.1)' }}; color: {{ '#34d399' if 'successful' in message else '#f87171' }}; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid {{ 'rgba(16, 185, 129, 0.2)' if 'successful' in message else 'rgba(239, 68, 68, 0.2)' }};">
+            <p style="margin: 0; font-size: 0.9rem;">{{ message }}</p>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="primary-btn" style="width: 100%; margin-top: 10px;">
+                Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up for free</a></p>
+        </div>
+    </div>
+</body>
+
+</html>
