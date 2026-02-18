@@ -4,7 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to The Manager AI</title>
+    <title>Manager AI by Rae | Your Personal Social Media Strategist</title>
+    <meta name="description"
+        content="Generate high-converting, culturally relevant social media content ideas for your business with Manager AI. Powered by advanced artificial intelligence from Rae.">
+    <meta name="keywords"
+        content="AI social media manager, content strategy, instagram ideas, tiktok content, small business marketing, Rae AI, Nigerian content creator">
+    <meta name="author" content="Rae">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://managerai.raehub.live/">
+    <meta property="og:title" content="Manager AI by Rae | Your Personal Social Media Strategist">
+    <meta property="og:description"
+        content="Stop guessing. Start growing. Get custom video scripts and captions in seconds.">
+    <meta property="og:image" content="{{ url_for('static', filename='rae_logo.png') }}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://managerai.raehub.live/">
+    <meta property="twitter:title" content="Manager AI by Rae">
+    <meta property="twitter:description"
+        content="Stop guessing. Start growing. Get custom video scripts and captions in seconds.">
+    <meta property="twitter:image" content="{{ url_for('static', filename='rae_logo.png') }}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
@@ -17,8 +42,9 @@
     <div class="intro-container">
         <header style="width: 100%;">
             <div class="logo">
-                <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
-                <span class="logo-text">The Manager AI</span>
+                <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+                <span class="logo-text">Manager AI <small style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by
+                        Rae</small></span>
             </div>
             <a href="{{ url_for('login') }}" class="secondary-btn">Login</a>
         </header>

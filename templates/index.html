@@ -4,18 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Manager AI</title>
+    <title>Dashboard | Manager AI by Rae</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
-
-    <!-- Simple Subscription Overlay -->
-    <!-- Simple Subscription Overlay Removed -->
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay hidden">
@@ -23,32 +25,15 @@
         <div class="loading-text" style="margin-top: 20px; font-weight: 500;">Generating Your Strategy...</div>
     </div>
 
-    <!-- Subscription Modal -->
-    <div id="subscription-modal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-icon">🚀</div>
-            <h2>Unleash Unlimited Ideas</h2>
-            <div class="price">₦3,000<span class="period">/month</span></div>
-            <ul style="text-align: left; margin: 20px 0; color: #94a3b8; list-style: none; padding: 0;">
-                <li style="margin-bottom: 10px;"><i class="fa-solid fa-check"
-                        style="color: var(--primary-color); margin-right: 10px;"></i> 500 Points</li>
-                <li style="margin-bottom: 10px;"><i class="fa-solid fa-check"
-                        style="color: var(--primary-color); margin-right: 10px;"></i> Advanced AI Models</li>
-                <li style="margin-bottom: 10px;"><i class="fa-solid fa-check"
-                        style="color: var(--primary-color); margin-right: 10px;"></i> Priority Support</li>
-            </ul>
-            <button id="subscribe-btn" class="glow-btn" style="width: 100%;">Upgrade Now</button>
-            <button id="close-sub-modal" class="secondary-btn" style="margin-top: 10px; width: 100%;">Maybe
-                Later</button>
-        </div>
-    </div>
+    <!-- Removed Subscription Modal since we have a dedicated pricing page now -->
 
     <div class="main-wrapper">
         <div class="container" id="main-app">
             <header>
                 <div class="logo">
-                    <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
-                    <span class="logo-text">The Manager AI</span>
+                    <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+                    <span class="logo-text">Manager AI <small
+                            style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by Rae</small></span>
                 </div>
 
                 <div class="header-right">
@@ -58,13 +43,26 @@
                     <button class="theme-toggle" id="theme-btn" title="Toggle Theme">
                         <i class="fa-solid fa-moon"></i>
                     </button>
-                    <div class="user-badge" id="points-badge">
-                        <span class="status-dot"></span>
-                        <span id="points-display">50 Points</span>
+
+                    {% if is_subscribed %}
+                    <div class="user-badge glow-effect" style="border-color: gold; color: gold;">
+                        <i class="fa-solid fa-crown" style="margin-right: 5px;"></i>
+                        <span>Premium</span>
                     </div>
+                    {% else %}
+                    <div class="user-badge">
+                        <span class="status-dot"></span>
+                        <span>Free Plan</span>
+                    </div>
+                    <a href="{{ url_for('pricing') }}" class="primary-btn glow-effect"
+                        style="padding: 8px 16px; font-size: 0.9rem; margin-left: 10px; border-radius: 10px; background: linear-gradient(90deg, #f59e0b, #d97706); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); text-decoration: none;">
+                        <i class="fa-solid fa-rocket" style="margin-right: 5px;"></i> Upgrade
+                    </a>
+                    {% endif %}
+
                     <a href="{{ url_for('logout') }}" class="secondary-btn"
-                        style="padding: 6px 12px; font-size: 0.85rem; margin-left: 10px; border-radius: 8px;"><i
-                            class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                        style="padding: 8px 12px; font-size: 0.85rem; margin-left: 10px; border-radius: 8px;"><i
+                            class="fa-solid fa-right-from-bracket"></i></a>
                 </div>
             </header>
 
@@ -147,6 +145,23 @@
                 <section class="result-section hidden" id="result-section">
                     <!-- JS Injects cards here -->
                     <div class="idea-box" id="idea-text"></div>
+
+                    <!-- Refinement Area -->
+                    <div class="refinement-area"
+                        style="margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid var(--border-color);">
+                        <label for="refine-input"
+                            style="display: block; margin-bottom: 12px; font-weight: 600; font-size: 1rem; color: var(--primary-color);">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Not quite right? Refine it:
+                        </label>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <input type="text" id="refine-input"
+                                placeholder="e.g. Make it funnier, change the music, shorten the caption..."
+                                style="flex: 1; min-width: 200px;">
+                            <button id="refine-btn" class="primary-btn" style="padding: 0 24px; white-space: nowrap;">
+                                <i class="fa-solid fa-rotate"></i> Refine Result
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="action-row">
                         <button id="copy-btn" class="secondary-btn">

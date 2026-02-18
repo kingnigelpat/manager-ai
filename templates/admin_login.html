@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | The Manager AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container auth-container">
+        <header>
+            <div class="logo" style="margin: 0 auto;">
+                <div class="logo-icon"><i class="fa-solid fa-lock"></i></div>
+                <span class="logo-text">Admin Access</span>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 20px; color: #fca5a5; text-align: center;">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('admin_login') }}" method="POST">
+            <div class="form-group">
+                <label for="pin">Enter Admin PIN</label>
+                <input type="password" id="pin" name="pin" placeholder="Enter PIN code" required
+                    style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;">
+            </div>
+
+            <button type="submit" class="glow-btn">Verify</button>
+        </form>
+
+        <div class="auth-footer">
+            <a href="{{ url_for('dashboard') }}" class="secondary-btn" style="background: transparent; border: none;">Go
+                to Dashboard</a>
+        </div>
+    </div>
+</body>
+
+</html>

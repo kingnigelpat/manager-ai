@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Submitted | The Manager AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .success-container {
+            max-width: 600px;
+            margin: 60px auto;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 2rem;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="success-container">
+        <i class="fa-solid fa-circle-check success-icon"></i>
+        <h1>Submission Received!</h1>
+        <p>Thank you! We have received your payment screenshot.</p>
+
+        <div
+            style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 12px; margin: 30px auto; text-align: left; max-width: 450px; border: 1px solid var(--border-color);">
+            <h3 style="color: var(--primary-color); margin-bottom: 15px; font-size: 1.1rem;"><i
+                    class="fa-regular fa-clock"></i> What happens next?</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 10px; line-height: 1.5;">1. Our team will verify your payment
+                within <strong>6 hours</strong>.</p>
+            <p style="font-size: 0.95rem; line-height: 1.5;">2. Once approved, your account will be automatically
+                upgraded to <strong>Premium</strong>.</p>
+        </div>
+
+        <p
+            style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            If you need urgent activation or don't see the upgrade after 6 hours, notify us directly:
+        </p>
+
+        <a href="https://ig.me/m/rae__hub" target="_blank" class="primary-btn"
+            style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); border: none; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+            <i class="fa-brands fa-instagram"></i> Notify Admin on Instagram
+        </a>
+        <br>
+        <a href="{{ url_for('dashboard') }}" class="secondary-btn"
+            style="display: inline-block; margin-top: 10px;">Return to Dashboard</a>
+    </div>
+</body>
+
+</html>

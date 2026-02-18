@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | The Manager AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-table th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
+            display: inline-flex;
+            gap: 5px;
+            align-items: center;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+
+        .btn-approve {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-approve:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-reject {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-reject:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-transform: capitalize;
+        }
+
+        .status-pending {
+            background: #f59e0b20;
+            color: #fbbf24;
+        }
+
+        .status-approved {
+            background: #10b98120;
+            color: #34d399;
+        }
+
+        .status-rejected {
+            background: #ef444420;
+            color: #f87171;
+        }
+
+        .screenshot-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .screenshot-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .admin-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="{{ url_for('static', filename='rae_logo.png') }}" alt="Rae Logo"
+                    style="height: 50px; border-radius: 8px;">
+                <div>
+                    <h1 style="margin: 0; font-size: 2rem;">Admin Dashboard</h1>
+                    <p style="margin: 0; opacity: 0.7;">Manage submissions and verify payments.</p>
+                </div>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="secondary-btn">User View</a>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; color: #34d399;">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <h2 style="margin-bottom: 20px;">Pending Submissions</h2>
+
+        {% if submissions %}
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Full Name</th>
+                    <th>App Username</th>
+                    <th>Plan</th>
+                    <th>Screenshot</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr>
+                    <td>{{ sub[5] }}</td>
+                    <td>{{ sub[2] }}</td>
+                    <td>{{ sub[1] }}</td>
+                    <td>{{ sub[3] }}</td>
+                    <td>
+                        <a href="{{ url_for('uploaded_file', filename=sub[4]) }}" target="_blank"
+                            class="screenshot-link">
+                            <i class="fa-solid fa-image"></i> View
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('approve_submission', submission_id=sub[0]) }}"
+                            class="action-btn btn-approve">
+                            <i class="fa-solid fa-check"></i> Approve
+                        </a>
+                        <a href="{{ url_for('reject_submission', submission_id=sub[0]) }}"
+                            class="action-btn btn-reject">
+                            <i class="fa-solid fa-xmark"></i> Reject
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div
+            style="text-align: center; padding: 40px; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border-radius: 12px;">
+            <i class="fa-solid fa-inbox" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+            <p>No pending submissions.</p>
+        </div>
+        {% endif %}
+
+        <h2 style="margin-top: 40px; margin-bottom: 20px;">Recent History</h2>
+        <!-- History Table -->
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Full Name</th>
+                    <th>App Username</th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td>{{ item[5] }}</td>
+                    <td>{{ item[2] }}</td>
+                    <td>{{ item[1] }}</td>
+                    <td>{{ item[3] }}</td>
+                    <td><span class="status-badge status-{{ item[4] }}">{{ item[4] }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- User Management table -->
+        <h2 style="margin-top: 40px; margin-bottom: 20px;">User Management</h2>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>App Username</th>
+                    <th>Plan Status</th>
+                    <th>Subscribed On</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user[0] }}</td>
+                    <td>{{ user[1] }}</td>
+                    <td>
+                        {% if user[2] %}
+                        <span class="status-badge status-approved">Premium</span>
+                        {% else %}
+                        <span class="status-badge"
+                            style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Free</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user[3] if user[3] else '-' }}</td>
+                    <td>
+                    <td>
+                        <div style="display: flex; gap: 5px;">
+                            {% if user[2] %}
+                            <a href="{{ url_for('terminate_plan', user_id=user[0]) }}" class="action-btn btn-reject"
+                                style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);"
+                                onclick="return confirm('Downgrade this user to Free plan?')">
+                                <i class="fa-solid fa-level-down-alt"></i> Downgrade
+                            </a>
+                            {% endif %}
+
+                            <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="action-btn btn-reject"
+                                onclick="return confirm('WARNING: This will permanently delete this user and all their data. Are you sure?')">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</body>
+
+</html>

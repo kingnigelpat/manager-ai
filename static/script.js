@@ -13,276 +13,315 @@ document.addEventListener('DOMContentLoaded', () => {
     const ideaText = document.getElementById('idea-text');
     const copyBtn = document.getElementById('copy-btn');
 
-    const checkStatusUrl = '/api/check_status';
-    const subscribeUrl = '/api/subscribe';
+    // Refinement Elements
+    const refineInput = document.getElementById('refine-input');
+    const refineBtn = document.getElementById('refine-btn');
+
+    let currentRawIdea = ""; // Store the raw markdown for context
 
     // Theme Toggle
     const themeBtn = document.getElementById('theme-btn');
-    const pointsDisplay = document.getElementById('points-display');
-    const pointsBadge = document.getElementById('points-badge');
 
-    // Check local storage for theme
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.setAttribute('data-theme', 'dark');
-        themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
-    }
-
-    themeBtn.addEventListener('click', () => {
-        if (document.body.getAttribute('data-theme') === 'dark') {
-            document.body.removeAttribute('data-theme');
+    // Function to set theme
+    const setTheme = (theme) => {
+        if (theme === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            if (themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
             localStorage.setItem('theme', 'light');
-            themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
         } else {
-            document.body.setAttribute('data-theme', 'dark');
+            document.body.removeAttribute('data-theme'); // Default is dark
+            if (themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
             localStorage.setItem('theme', 'dark');
-            themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
         }
-    });
+    };
 
-    // Check subscription status on load
-    fetch('/api/check_status')
-        .then(res => res.json())
-        .then(data => {
-            if (data.subscribed) {
-                pointsDisplay.textContent = "Premium Member";
-                pointsBadge.style.borderColor = "gold";
-                pointsBadge.style.color = "gold";
-            } else if (data.trial_used) {
-                pointsDisplay.textContent = "Trial Expired";
-                pointsBadge.style.borderColor = "#ef4444"; // Red
-                pointsBadge.style.color = "#ef4444";
-            } else {
-                pointsDisplay.textContent = "1 Free Idea";
-                pointsBadge.style.borderColor = "#10b981"; // Green
-                pointsBadge.style.color = "#10b981";
-            }
-        });
+    // Check local storage or system preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        // Check system preference
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(systemPrefersDark ? 'dark' : 'light');
+    }
 
-    // Subscription Modal Elements
-    const subModal = document.getElementById('subscription-modal');
-    if (subModal) {
-        document.getElementById('close-sub-modal')?.addEventListener('click', () => {
-            subModal.classList.add('hidden');
-        });
-
-        document.getElementById('subscribe-btn')?.addEventListener('click', () => {
-            const btn = document.getElementById('subscribe-btn');
-            const originalText = btn.textContent;
-
-            // Simulate processing
-            btn.textContent = "Processing...";
-            btn.disabled = true;
-
-            setTimeout(() => {
-                fetch(subscribeUrl, { method: 'POST' })
-                    .then(res => res.json())
-                    .then(data => {
-                        subModal.classList.add('hidden');
-                        alert("Upgrade Successful! Welcome to Premium.");
-
-                        // Update UI
-                        pointsDisplay.textContent = "Premium Member";
-                        pointsBadge.style.borderColor = "gold";
-                        pointsBadge.style.color = "gold";
-
-                        // Reset button
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    })
-                    .catch(e => {
-                        alert("Payment failed. Please try again.");
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    });
-            }, 1000);
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+            setTheme(currentTheme === 'light' ? 'dark' : 'light');
         });
     }
 
-    // 2. Generate Logic
-    generateBtn.addEventListener('click', () => {
+    // Helper to process and display result
+    const displayResult = (data) => {
+        // Display Structured Logic
+        const rawText = data.idea;
+        currentRawIdea = rawText; // Update context
 
+        // Simple parsing based on the prompt structure
+        let bigIdea = "Cool Video Idea";
+        let stepsHtml = "";
+        let proTip = "";
+        let caption = "";
+        let hashtags = "";
+        let bestTime = "";
 
-        const business = businessInput.value.trim();
-        const platform = platformInput.value;
-        const mood = moodInput.value;
-        const goal = goalInput.value;
-        const people = peopleInput.value;
-        const language = languageInput.value;
+        try {
+            // Extract parts using regex or splitting
+            const parts = rawText.split(/THE BIG IDEA|STEP-BY-STEP.*?|PRO TIP.*?|CAPTION|HASHTAGS|BEST TIME TO POST/i);
 
-        // Show Loading Overlay
-        const loadingOverlay = document.getElementById('loading-overlay');
-        loadingOverlay.classList.remove('hidden');
+            if (parts.length >= 2) bigIdea = parts[1].trim();
+            if (parts.length >= 3) {
+                // Format steps as a list
+                const stepsRaw = parts[2].trim();
+                const stepsLines = stepsRaw.split('\n').filter(line => line.trim().length > 0);
+                stepsHtml = `<ul class="step-list">`;
+                stepsLines.forEach(line => {
+                    stepsHtml += `<li>${line.replace(/^\d+\.\s*/, '')}</li>`; // Remove number prefix if present
+                });
+                stepsHtml += `</ul>`;
+            }
+            if (parts.length >= 4) proTip = parts[3].trim();
+            if (parts.length >= 5) caption = parts[4].trim();
+            if (parts.length >= 6) hashtags = parts[5].trim();
+            if (parts.length >= 7) bestTime = parts[6].trim();
+        } catch (e) {
+            console.error("Parsing error", e);
+            bigIdea = rawText;
+        }
 
-        // Optional: Update button state (though obscure by overlay)
-        generateBtn.disabled = true;
+        // Construct HTML
+        let finalHtml = `
+            <div class="result-card">
+                <div class="result-header"><i class="fa-solid fa-clapperboard"></i> The Big Idea</div>
+                <div class="result-body">${bigIdea}</div>
+            </div>
+        `;
 
-        fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                businessType: business,
-                platform: platform,
-                mood: mood,
-                goal: goal,
-                people: people,
-                language: language
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                // Hide Loading Overlay
-                loadingOverlay.classList.add('hidden');
-                generateBtn.disabled = false;
+        if (stepsHtml) {
+            finalHtml += `
+                <div class="result-card">
+                    <div class="result-header"><i class="fa-solid fa-shoe-prints"></i> Step-by-Step Plan</div>
+                    <div class="result-body">${stepsHtml}</div>
+                </div>
+            `;
+        }
 
-                if (data.error) {
-                    if (data.error === "LIMIT_REACHED") {
-                        // Show subscription modal
-                        if (subModal) subModal.classList.remove('hidden');
-                        else alert(data.message);
-                    } else {
-                        alert(data.error);
-                    }
-                    return;
-                }
+        if (proTip) {
+            finalHtml += `
+                <div class="pro-tip-box" style="margin-bottom: 20px; padding: 15px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; display: flex; align-items: center; gap: 15px;">
+                    <div class="pro-tip-icon" style="font-size: 1.5rem; color: #f59e0b;"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div style="color: var(--text-main);"><strong>Pro Tip:</strong> ${proTip}</div>
+                </div>
+            `;
+        }
 
-                // Display Structured Logic
-                const rawText = data.idea;
+        if (caption) {
+            finalHtml += `
+                <div class="result-card">
+                    <div class="result-header"><i class="fa-solid fa-comment-dots"></i> Caption</div>
+                    <div class="result-body" style="white-space: pre-wrap;">${caption}</div>
+                </div>
+            `;
+        }
 
-                // Simple parsing based on the prompt structure
-                // Expecting: BIG IDEA ... STEP-BY-STEP ... PRO TIP
+        if (hashtags) {
+            finalHtml += `
+                <div class="result-card">
+                    <div class="result-header"><i class="fa-solid fa-hashtag"></i> Hashtags</div>
+                    <div class="result-body" style="color: var(--primary-color); font-weight: 500;">${hashtags}</div>
+                </div>
+            `;
+        }
 
-                let bigIdea = "Cool Video Idea";
-                let stepsHtml = "";
-                let proTip = "";
-                let caption = "";
-                let hashtags = "";
-                let bestTime = "";
+        if (bestTime) {
+            finalHtml += `
+                <div class="result-card">
+                    <div class="result-header"><i class="fa-regular fa-clock"></i> Best Time to Post</div>
+                    <div class="result-body">${bestTime}</div>
+                </div>
+            `;
+        }
 
-                try {
-                    // Extract parts using regex or splitting
-                    const parts = rawText.split(/THE BIG IDEA|STEP-BY-STEP.*?|PRO TIP.*?|CAPTION|HASHTAGS|BEST TIME TO POST/i);
-                    // parts[0] might be empty or intro
-                    // parts[1] = Big Idea
-                    // parts[2] = Steps
-                    // parts[3] = Pro Tip
-                    // parts[4] = Caption
-                    // parts[5] = Hashtags
-                    // parts[6] = Best Time
-
-                    if (parts.length >= 2) bigIdea = parts[1].trim();
-                    if (parts.length >= 3) {
-                        // Format steps as a list
-                        const stepsRaw = parts[2].trim();
-                        const stepsLines = stepsRaw.split('\n').filter(line => line.trim().length > 0);
-                        stepsHtml = `<ul class="step-list">`;
-                        stepsLines.forEach(line => {
-                            stepsHtml += `<li>${line.replace(/^\d+\.\s*/, '')}</li>`; // Remove number prefix if present
-                        });
-                        stepsHtml += `</ul>`;
-                    }
-                    if (parts.length >= 4) proTip = parts[3].trim();
-                    if (parts.length >= 5) caption = parts[4].trim();
-                    if (parts.length >= 6) hashtags = parts[5].trim();
-                    if (parts.length >= 7) bestTime = parts[6].trim();
-                } catch (e) {
-                    console.error("Parsing error", e);
-                    bigIdea = rawText;
-                }
-
-                // Construct HTML
-                let finalHtml = `
-                    <div class="result-card">
-                        <div class="result-header"><i class="fa-solid fa-clapperboard"></i> The Big Idea</div>
-                        <div class="result-body">${bigIdea}</div>
-                    </div>
+        // If parsing failed significantly (no sections found), fallback to raw
+        if (typeof parts === 'undefined' || parts.length < 2) {
+            finalHtml = `
+                <div class="result-card">
+                    <div class="result-body" style="white-space: pre-wrap;">${rawText}</div>
+                </div>
                 `;
+        }
 
-                if (stepsHtml) {
-                    finalHtml += `
-                        <div class="result-card">
-                            <div class="result-header"><i class="fa-solid fa-shoe-prints"></i> Step-by-Step Plan</div>
-                            <div class="result-body">${stepsHtml}</div>
-                        </div>
-                    `;
-                }
+        ideaText.innerHTML = finalHtml;
+        resultSection.classList.remove('hidden');
 
-                if (proTip) {
-                    finalHtml += `
-                        <div class="pro-tip-box">
-                            <div class="pro-tip-icon"><i class="fa-solid fa-lightbulb"></i></div>
-                            <div><strong>Pro Tip:</strong> ${proTip}</div>
-                        </div>
-                    `;
-                }
+        // Scroll to results seamlessly
+        setTimeout(() => {
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
 
-                if (caption) {
-                    finalHtml += `
-                        <div class="result-card">
-                            <div class="result-header"><i class="fa-solid fa-comment-dots"></i> Caption</div>
-                            <div class="result-body">${caption}</div>
-                        </div>
-                    `;
-                }
+    // Generate Logic
+    if (generateBtn) {
+        generateBtn.addEventListener('click', () => {
 
-                if (hashtags) {
-                    finalHtml += `
-                        <div class="result-card">
-                            <div class="result-header"><i class="fa-solid fa-hashtag"></i> Hashtags</div>
-                            <div class="result-body" style="color: var(--primary-color); font-weight: 500;">${hashtags}</div>
-                        </div>
-                    `;
-                }
+            const business = businessInput.value.trim();
+            const platform = platformInput.value;
+            const mood = moodInput.value;
+            const goal = goalInput.value;
+            const people = peopleInput.value;
+            const language = languageInput.value;
 
-                if (bestTime) {
-                    finalHtml += `
-                        <div class="result-card">
-                            <div class="result-header"><i class="fa-regular fa-clock"></i> Best Time to Post</div>
-                            <div class="result-body">${bestTime}</div>
-                        </div>
-                    `;
-                }
+            if (!business) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Info',
+                    text: 'Please tell us about your business first!',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
 
-                // If parsing failed significantly (no sections found), fallback to raw
-                if (typeof parts === 'undefined' || parts.length < 2) {
-                    finalHtml = `
-                        <div class="result-card">
-                            <div class="result-body" style="white-space: pre-wrap;">${rawText}</div>
-                        </div>
-                     `;
-                }
+            // Clear old refinement input
+            if (refineInput) refineInput.value = "";
 
-                ideaText.innerHTML = finalHtml;
-                resultSection.classList.remove('hidden');
+            // Show Loading Overlay
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('hidden');
+            document.querySelector('.loading-text').innerText = "Generating Your Strategy...";
 
-                // Scroll to results seamlessly
-                setTimeout(() => {
-                    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+            // Disable button
+            generateBtn.disabled = true;
 
-                // button feedback
-                const originalBtnText = generateBtn.innerHTML;
-                generateBtn.innerHTML = '<span class="btn-icon"><i class="fa-solid fa-check"></i></span> Idea Ready!';
-                setTimeout(() => {
-                    generateBtn.innerHTML = originalBtnText;
-                    generateBtn.disabled = false;
-                }, 3000);
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessType: business,
+                    platform: platform,
+                    mood: mood,
+                    goal: goal,
+                    people: people,
+                    language: language
+                })
             })
-            .catch(err => {
-                loadingOverlay.classList.add('hidden');
-                generateBtn.disabled = false;
-                alert("Error generating content.");
-            });
-    });
+                .then(res => res.json())
+                .then(data => {
+                    // Hide Loading Overlay
+                    loadingOverlay.classList.add('hidden');
+                    generateBtn.disabled = false;
 
-    // 3. Copy Logic
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(ideaText.textContent).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = "Copied!";
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-            }, 2000);
+                    if (data.error) {
+                        if (data.error === "LIMIT_REACHED") {
+                            // Upsell Modal
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Free Limit Reached',
+                                text: 'Upgrade to Premium for unlimited generations!',
+                                showCancelButton: true,
+                                confirmButtonText: 'Upgrade Now',
+                                confirmButtonColor: '#f59e0b'
+                            }).then((result) => {
+                                if (result.isConfirmed) window.location.href = '/pricing';
+                            });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.error });
+                        }
+                        return;
+                    }
+
+                    displayResult(data);
+
+                    // button feedback
+                    const originalBtnText = generateBtn.innerHTML;
+                    generateBtn.innerHTML = '<span class="btn-icon"><i class="fa-solid fa-check"></i></span> Idea Ready!';
+                    setTimeout(() => {
+                        generateBtn.innerHTML = originalBtnText;
+                        generateBtn.disabled = false;
+                    }, 3000);
+                })
+                .catch(err => {
+                    loadingOverlay.classList.add('hidden');
+                    generateBtn.disabled = false;
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Oops...', text: 'Something went wrong generating content.' });
+                });
         });
-    });
+    }
+
+    // Refinement Logic
+    if (refineBtn) {
+        refineBtn.addEventListener('click', () => {
+            const refinement = refineInput.value.trim();
+            if (!refinement) return;
+
+            if (!currentRawIdea) {
+                Swal.fire({ icon: 'info', title: 'No Idea Yet', text: 'Generate an idea first before refining!' });
+                return;
+            }
+
+            // Use same inputs as before
+            const business = businessInput.value.trim();
+            const platform = platformInput.value;
+            const mood = moodInput.value;
+            const goal = goalInput.value;
+            const people = peopleInput.value;
+            const language = languageInput.value;
+
+            // Show Loading Overlay
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('hidden');
+            document.querySelector('.loading-text').innerText = "Refining Your Strategy...";
+
+            refineBtn.disabled = true;
+
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessType: business,
+                    platform: platform,
+                    mood: mood,
+                    goal: goal,
+                    people: people,
+                    language: language,
+                    refinement: refinement,
+                    previous_idea: currentRawIdea
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    loadingOverlay.classList.add('hidden');
+                    refineBtn.disabled = false;
+                    refineInput.value = ""; // Clear input
+
+                    if (data.error) {
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.error });
+                        return;
+                    }
+
+                    displayResult(data);
+                })
+                .catch(err => {
+                    loadingOverlay.classList.add('hidden');
+                    refineBtn.disabled = false;
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Oops...', text: 'Error refining content.' });
+                });
+        });
+    }
+
+    // Copy Logic
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(ideaText.textContent).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<span class="icon"><i class="fa-solid fa-check"></i></span> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+    }
 
 });

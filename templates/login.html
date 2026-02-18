@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - The Manager AI</title>
+    <title>Login | Manager AI by Rae</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
@@ -15,8 +18,9 @@
 <body>
     <div class="container auth-container">
         <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
-            <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
-            <span class="logo-text">The Manager AI</span>
+            <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+            <span class="logo-text">Manager AI <small style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by
+                    Rae</small></span>
         </div>
 
         <div class="hero-text" style="margin-bottom: 2rem;">
@@ -35,25 +39,137 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <!-- Firebase scripts -->
+        <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+        <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
+
+        <form id="login-form">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
             </div>
 
             <button type="submit" class="primary-btn" style="width: 100%; margin-top: 10px;">
                 Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
+            <p id="error-message"
+                style="color: #f87171; font-size: 0.9rem; text-align: center; margin-top: 10px; display: none;"></p>
+
+            <div id="forgot-password-section" style="display: none; text-align: center; margin-top: 10px;">
+                <a href="#" id="reset-link"
+                    style="font-size: 0.85rem; color: var(--text-muted); text-decoration: underline;">Forgot
+                    Password?</a>
+            </div>
         </form>
 
         <div class="auth-footer">
             <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up for free</a></p>
         </div>
+
+        <!-- SweetAlert2 for nicer popups -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <script>
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorMsg = document.getElementById('error-message');
+                const btn = e.target.querySelector('button');
+
+                errorMsg.style.display = 'none';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in...';
+
+                try {
+                    // Firebase Login
+                    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                    const idToken = await userCredential.user.getIdToken();
+
+                    // Backend Verification
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idToken: idToken })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.is_admin) {
+                            // Show Nice Admin Choice Modal
+                            Swal.fire({
+                                title: 'Welcome Admin!',
+                                text: 'Where would you like to go?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'Admin Panel',
+                                cancelButtonText: 'Dashboard',
+                                confirmButtonColor: '#10b981',
+                                cancelButtonColor: '#3b82f6'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = "/admin/login";
+                                } else {
+                                    window.location.href = data.redirect;
+                                }
+                            });
+                        } else {
+                            window.location.href = data.redirect;
+                        }
+                    } else {
+                        throw new Error(data.error || "Login failed on server");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    let msg = error.message;
+
+                    // User-friendly error messages
+                    if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
+                        msg = "Incorrect email or password.";
+                        // Show Forgot Password link
+                        document.getElementById('forgot-password-section').style.display = 'block';
+                    } else if (error.code === 'auth/user-not-found') {
+                        msg = "No account found with this email.";
+                    } else if (error.code === 'auth/wrong-password') {
+                        msg = "Incorrect password.";
+                        document.getElementById('forgot-password-section').style.display = 'block';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        msg = "Too many failed attempts. Please try again later.";
+                    }
+
+                    errorMsg.innerText = msg;
+                    errorMsg.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = 'Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>';
+                }
+            });
+            document.getElementById('reset-link').addEventListener('click', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                if (!email) {
+                    Swal.fire({ icon: 'warning', title: 'Enter Email', text: 'Please enter your email address first.' });
+                    return;
+                }
+
+                try {
+                    await firebase.auth().sendPasswordResetEmail(email);
+                    Swal.fire({ icon: 'success', title: 'Email Sent', text: 'Check your inbox (and spam) to reset your password.' });
+                } catch (error) {
+                    if (error.code === 'auth/user-not-found') {
+                        Swal.fire({ icon: 'error', title: 'User Not Found', text: 'There is no account registered with this email.' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: error.message });
+                    }
+                }
+            });
+        </script>
     </div>
 </body>
 
