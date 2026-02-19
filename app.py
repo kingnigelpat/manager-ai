@@ -246,7 +246,6 @@ def admin_required(f):
         # Check if admin is authenticated with PIN
         if not session.get('admin_authenticated'):
             return redirect(url_for('admin_login'))
-            
         return f(*args, **kwargs)
     return decorated_function
 
@@ -270,8 +269,9 @@ def admin_login():
                 PIN_ATTEMPTS[user_id] = [current_time, 0]
 
     if request.method == 'POST':
-        pin = request.form.get('pin')
-        correct_pin = os.getenv('ADMIN_PIN')
+        pin = request.form.get('pin', '').strip()
+        # Hardcode fallback for online reliability
+        correct_pin = os.getenv('ADMIN_PIN', 'Olyviamywife2324').strip()
         
         if pin == correct_pin:
             session['admin_authenticated'] = True
