@@ -7,6 +7,11 @@
     <title>Dashboard | Manager AI by Rae</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ef4444">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Manager AI">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
@@ -217,6 +222,16 @@
     <!-- Markdown Renderer -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("/sw.js")
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

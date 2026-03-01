@@ -993,6 +993,14 @@ def internal_error(e):
 def robots():
     return send_from_directory(app.config.root_path, 'static/robots.txt')
 
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'manifest.json')
+
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js')
+
 @app.route('/sitemap.xml')
 def sitemap():
     sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
