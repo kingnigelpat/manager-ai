@@ -174,12 +174,13 @@ h3,
     border: 1px solid var(--border-color);
     border-radius: 24px;
     padding: 3rem;
-    width: 100%;
+    width: 95%;
     max-width: 800px;
     box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
     transition: all 0.5s ease;
+    margin: 20px auto;
 }
 
 .auth-container {
@@ -825,32 +826,21 @@ main {
 }
 
 @media (max-width: 768px) {
+    body {
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
     .container {
-        padding: 1.5rem;
+        padding: 1.2rem;
         border-radius: 20px;
-        width: 100%;
-        margin: 10px;
-        box-shadow: none;
-        /* Simplify on mobile */
-        border: none;
-        background: transparent;
-        /* Remove heavy glass on mobile for perf */
-        backdrop-filter: none;
-    }
-
-    /* Re-add card bg to content areas if container is transparent */
-    .intro-container .feature-card,
-    .result-card,
-    .form-group input,
-    .form-group select {
+        width: calc(100% - 20px);
+        margin: 10px auto;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
         background: var(--card-bg);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    [data-theme="light"] .container {
-        background: transparent;
-        box-shadow: none;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
     }
 
     .intro-hero h1 {
@@ -1098,3 +1088,56 @@ main {
     }
 }
 
+
+/* Extra Mobile Optimizations */
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding-bottom: 2rem;
+        gap: 20px;
+    }
+    
+    .header-right {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .logo {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .logo-text {
+        font-size: 1.1rem;
+    }
+
+    .intro-hero h1 {
+        font-size: 2rem;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-area button {
+        width: 100%;
+    }
+
+    .result-markdown-body {
+        padding: 15px;
+        font-size: 0.9rem;
+    }
+
+    .result-markdown-body table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+}
