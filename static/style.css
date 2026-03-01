@@ -1261,9 +1261,23 @@ main {
     background: var(--input-bg);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 0.9rem;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.support-input:focus {
+    border-color: var(--primary-color);
+}
+
+.support-send {
+    padding: 0 15px !important;
+    height: 45px;
+    min-width: 45px;
+    border-radius: 12px !important;
+    font-size: 1.1rem !important;
 }
 
 .talk-to-human-btn {
@@ -1303,14 +1317,25 @@ main {
 
 @media (max-width: 480px) {
     .support-widget {
-        bottom: 20px;
-        right: 20px;
+        bottom: 15px;
+        right: 15px;
+    }
+
+    .support-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
     }
 
     .support-chat {
-        width: calc(100vw - 40px);
-        height: 60vh;
-        bottom: 70px;
+        width: calc(100vw - 30px);
+        height: 70vh;
+        bottom: 65px;
         right: 0px;
+        border-radius: 20px;
+    }
+
+    .msg {
+        font-size: 0.85rem;
     }
 }

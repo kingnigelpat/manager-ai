@@ -267,9 +267,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const appendMsg = (text, role) => {
         const msgDiv = document.createElement('div');
         msgDiv.className = `msg msg-${role}`;
-        msgDiv.innerHTML = text;
+
+        // Use marked for AI to render markdown/formatting
+        if (role === 'ai') {
+            msgDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text;
+        } else {
+            msgDiv.textContent = text;
+        }
+
         supportMessages.appendChild(msgDiv);
-        supportMessages.scrollTop = supportMessages.scrollHeight;
+        supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
 
         // Add to history for context (AI needs role 'user' or 'assistant')
         chatHistory.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
@@ -285,27 +292,34 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show typing indicator
         const typingDiv = document.createElement('div');
         typingDiv.className = 'msg msg-ai';
-        typingDiv.innerHTML = '<i class="fa-solid fa-ellipsis fa-fade"></i>';
+        typingDiv.innerHTML = '<i class="fa-solid fa-sync fa-spin"></i> Rae is thinking...';
         supportMessages.appendChild(typingDiv);
-        supportMessages.scrollTop = supportMessages.scrollHeight;
+        supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
         try {
             const response = await fetch('/api/support', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: query, history: chatHistory.slice(-5) })
+                body: JSON.stringify({ question: query, history: chatHistory.slice(-5) }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             const data = await response.json();
 
             supportMessages.removeChild(typingDiv);
             if (data.answer) {
                 appendMsg(data.answer, 'ai');
             } else {
-                appendMsg("I'm sorry, I couldn't reach the support server. Try again shortly!", 'ai');
+                appendMsg("Sorry, I'm a bit overwhelmed. Ping us on Instagram!", 'ai');
             }
         } catch (error) {
-            supportMessages.removeChild(typingDiv);
-            appendMsg("Connection error. Please check your internet or reach us on Instagram.", 'ai');
+            clearTimeout(timeoutId);
+            if (typingDiv.parentNode) supportMessages.removeChild(typingDiv);
+            const errMsg = error.name === 'AbortError' ? "Request timed out. Slow internet? 📶" : "Connection issue. Try Instagram!";
+            appendMsg(errMsg, 'ai');
         }
     };
 
