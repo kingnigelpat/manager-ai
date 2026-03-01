@@ -1175,11 +1175,13 @@ main {
 }
 
 .support-chat {
-    position: absolute;
-    bottom: 80px;
-    right: 0;
-    width: 350px;
-    height: 500px;
+    position: fixed;
+    /* Changed from absolute to fixed */
+    bottom: 110px;
+    right: 30px;
+    width: 380px;
+    height: 600px;
+    max-height: calc(100vh - 120px);
     background: var(--card-bg);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -1189,8 +1191,9 @@ main {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: bottom right;
+    z-index: 10000;
 }
 
 .support-chat.hidden {
@@ -1317,25 +1320,33 @@ main {
 
 @media (max-width: 480px) {
     .support-widget {
-        bottom: 15px;
-        right: 15px;
+        bottom: 20px;
+        right: 20px;
     }
 
     .support-btn {
-        width: 50px;
-        height: 50px;
+        width: 55px;
+        height: 55px;
         font-size: 1.3rem;
     }
 
     .support-chat {
-        width: calc(100vw - 30px);
-        height: 70vh;
-        bottom: 65px;
-        right: 0px;
+        width: calc(100vw - 40px);
+        height: 500px;
+        max-height: 80vh;
+        bottom: 85px;
+        right: 20px;
         border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     }
 
     .msg {
         font-size: 0.85rem;
+    }
+
+    /* Ensure input is always accessible */
+    .support-input-area {
+        position: relative;
+        z-index: 10;
     }
 }

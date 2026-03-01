@@ -264,6 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (supportToggle) supportToggle.addEventListener('click', toggleChat);
     if (closeChat) closeChat.addEventListener('click', toggleChat);
 
+    if (supportInput) {
+        // Fix: Ensure input remains visible when keyboard opens on mobile
+        supportInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
+            }, 300);
+        });
+    }
+
     const appendMsg = (text, role) => {
         const msgDiv = document.createElement('div');
         msgDiv.className = `msg msg-${role}`;
