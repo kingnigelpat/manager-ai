@@ -603,6 +603,9 @@ main {
     line-height: 1.7;
     color: var(--text-main);
     box-shadow: var(--shadow-lg);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .result-markdown-body h3 {
@@ -1134,11 +1137,33 @@ main {
     .result-markdown-body {
         padding: 15px;
         font-size: 0.9rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .result-markdown-body table {
         display: block;
+        width: 100% !important;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        /* Forces scroll instead of squishing */
+        margin-bottom: 20px;
+    }
+
+    .result-markdown-body td,
+    .result-markdown-body th {
+        min-width: 120px;
+        /* Ensures columns aren't too squished */
+        white-space: normal;
+        /* Allows text inside cells to wrap if needed, but the table itself scrolls */
+    }
+
+    .container {
+        padding: 1.5rem 1rem !important;
+        border-radius: 0;
+        margin: 0;
+        width: 100%;
     }
 
     .pricing-grid {
