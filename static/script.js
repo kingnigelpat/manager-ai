@@ -258,6 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
         supportWindow.classList.toggle('hidden');
         if (!supportWindow.classList.contains('hidden')) {
             supportInput.focus();
+        } else {
+            // Reset dynamic styles when closed
+            supportWindow.style.height = '';
+            supportWindow.style.bottom = '';
         }
     };
 
@@ -266,10 +270,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (supportInput) {
         // Fix: Ensure input remains visible when keyboard opens on mobile
+        const handleVisualViewportChange = () => {
+            if (window.visualViewport && window.innerWidth < 480) {
+                const height = window.visualViewport.height;
+                supportWindow.style.height = `${height}px`;
+                supportWindow.style.bottom = `${window.innerHeight - window.visualViewport.height}px`;
+
+                // Keep scrolled to bottom
+                setTimeout(() => {
+                    supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
+                }, 100);
+            }
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+            window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
+        }
+
         supportInput.addEventListener('focus', () => {
-            setTimeout(() => {
-                supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
-            }, 300);
+            setTimeout(handleVisualViewportChange, 300);
         });
     }
 
