@@ -219,6 +219,49 @@
         </div>
     </div>
 
+    <!-- AI Support Chat Widget -->
+    <div class="support-widget" id="support-widget">
+        <button class="support-btn" id="support-toggle" title="Chat with Raehub Care">
+            <i class="fa-solid fa-headset"></i>
+        </button>
+
+        <div class="support-chat hidden" id="support-window">
+            <div class="support-chat-header">
+                <h3><img src="{{ url_for('static', filename='rae_logo.png') }}"
+                        style="width: 24px; border-radius: 4px;"> Rae Care</h3>
+                <button id="close-chat"
+                    style="background: none; border: none; color: var(--text-muted); cursor: pointer;"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="support-messages" id="support-messages">
+                <div class="msg msg-ai">Hi! I'm <b>Rae</b>, your Manager AI Assistant. How can I help you grow today?
+                </div>
+            </div>
+
+            <div class="support-input-area">
+                <div style="width: 100%;">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" class="support-input" id="support-input" placeholder="Type your problem..."
+                            required>
+                        <button class="primary-btn support-send" id="support-send">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <button class="talk-to-human-btn" id="talk-to-human">
+                        <i class="fa-brands fa-instagram"></i> Talk to a Human
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Markdown Renderer -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
@@ -227,7 +270,11 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register("/sw.js")
-                    .then(reg => console.log('Service Worker registered'))
+                    .then(reg => {
+                        console.log('Service Worker registered');
+                        // Force update registration to ensure the prompt fires correctly
+                        reg.update();
+                    })
                     .catch(err => console.log('Service Worker registration failed', err));
             });
         }

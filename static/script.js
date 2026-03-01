@@ -243,56 +243,141 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- PWA Installation Logic ---
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent the mini-infobar from appearing on mobile
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        console.log('PWA installation prompt captured');
+    // --- AI Support Chat Logic ---
+    const supportToggle = document.getElementById('support-toggle');
+    const supportWindow = document.getElementById('support-window');
+    const closeChat = document.getElementById('close-chat');
+    const supportSend = document.getElementById('support-send');
+    const supportInput = document.getElementById('support-input');
+    const supportMessages = document.getElementById('support-messages');
+    const talkToHuman = document.getElementById('talk-to-human');
 
-        // Indicate the logo is interactive for installation
+    let chatHistory = [];
+
+    const toggleChat = () => {
+        supportWindow.classList.toggle('hidden');
+        if (!supportWindow.classList.contains('hidden')) {
+            supportInput.focus();
+        }
+    };
+
+    if (supportToggle) supportToggle.addEventListener('click', toggleChat);
+    if (closeChat) closeChat.addEventListener('click', toggleChat);
+
+    const appendMsg = (text, role) => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg msg-${role}`;
+        msgDiv.innerHTML = text;
+        supportMessages.appendChild(msgDiv);
+        supportMessages.scrollTop = supportMessages.scrollHeight;
+
+        // Add to history for context (AI needs role 'user' or 'assistant')
+        chatHistory.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
+    };
+
+    const sendSupportQuery = async () => {
+        const query = supportInput.value.trim();
+        if (!query) return;
+
+        appendMsg(query, 'user');
+        supportInput.value = '';
+
+        // Show typing indicator
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'msg msg-ai';
+        typingDiv.innerHTML = '<i class="fa-solid fa-ellipsis fa-fade"></i>';
+        supportMessages.appendChild(typingDiv);
+        supportMessages.scrollTop = supportMessages.scrollHeight;
+
+        try {
+            const response = await fetch('/api/support', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: query, history: chatHistory.slice(-5) })
+            });
+            const data = await response.json();
+
+            supportMessages.removeChild(typingDiv);
+            if (data.answer) {
+                appendMsg(data.answer, 'ai');
+            } else {
+                appendMsg("I'm sorry, I couldn't reach the support server. Try again shortly!", 'ai');
+            }
+        } catch (error) {
+            supportMessages.removeChild(typingDiv);
+            appendMsg("Connection error. Please check your internet or reach us on Instagram.", 'ai');
+        }
+    };
+
+    if (supportSend) supportSend.addEventListener('click', sendSupportQuery);
+    if (supportInput) {
+        supportInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendSupportQuery();
+        });
+    }
+
+    if (talkToHuman) {
+        talkToHuman.addEventListener('click', () => {
+            window.open('https://www.instagram.com/rae__hub', '_blank');
+        });
+    }
+
+    // --- Fixed PWA Installation Logic ---
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('✅ PWA Install Prompt captured!');
+
         document.querySelectorAll('.rae-logo').forEach(logo => {
             logo.style.cursor = 'pointer';
-            logo.setAttribute('title', 'Touch Logo to Install App');
-            // Add a subtle hint that it's interactive
-            logo.style.transition = 'filter 0.3s ease';
-            logo.addEventListener('mouseenter', () => logo.style.filter = 'drop-shadow(0 0 8px var(--primary-color))');
-            logo.addEventListener('mouseleave', () => logo.style.filter = 'none');
+            logo.title = 'Click logo to Install App';
+            // Visual hint already in CSS
         });
     });
 
-    // Handle Logo Interaction for Installation
     document.addEventListener('click', async (e) => {
-        // Check if the click was on the logo image or its container
-        if (e.target.classList.contains('rae-logo') || e.target.closest('.logo')) {
+        if (e.target.classList.contains('rae-logo') || e.target.closest('.rae-logo')) {
+            console.log('Logo clicked. Prompt state:', deferredPrompt ? 'Available' : 'Unavailable');
+
             if (deferredPrompt) {
-                console.log('Triggering PWA install prompt...');
-                // Show the install prompt
                 deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
                 const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response to install prompt: ${outcome}`);
-                // Clear the prompt stash
+                console.log(`User Choice: ${outcome}`);
                 deferredPrompt = null;
+            } else {
+                // Better UX: Tell them how to install if browser prompt hasn't fired
+                Swal.fire({
+                    title: 'How to Install',
+                    html: `
+                        <div style="text-align: left; font-size: 0.95rem;">
+                            <p>To install <b>Manager AI</b> as an app:</p>
+                            <ol>
+                                <li>Tap your browser's <b>Menu</b> (⋮ or <i class="fa-solid fa-arrow-up-from-bracket"></i>)</li>
+                                <li>Select <b>"Add to Home Screen"</b> or <b>"Install App"</b></li>
+                            </ol>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Note: Ensure you are using Chrome or Safari for the best experience.</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)',
+                    confirmButtonColor: 'var(--primary-color)'
+                });
             }
         }
     });
 
-    window.addEventListener('appinstalled', (e) => {
-        console.log('PWA was successfully installed');
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'success',
-                title: 'App Installed!',
-                text: 'Manager AI has been added to your device.',
-                timer: 3000,
-                showConfirmButton: false,
-                background: 'var(--card-bg)',
-                color: 'var(--text-main)'
-            });
-        }
+    window.addEventListener('appinstalled', () => {
+        console.log('🚀 App Installed Successfully');
+        Swal.fire({
+            icon: 'success',
+            title: 'Great Success!',
+            text: 'Manager AI has been added to your Home Screen.',
+            timer: 4000,
+            showConfirmButton: false
+        });
     });
 
 });

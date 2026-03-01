@@ -990,7 +990,8 @@ main {
 }
 
 .social-link {
-    width: 44px;    height: 44px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.03);
     display: flex;
@@ -1069,6 +1070,7 @@ main {
     .footer-grid {
         grid-template-columns: 1fr 1fr;
     }
+
     .footer-brand {
         grid-column: span 2;
     }
@@ -1078,9 +1080,11 @@ main {
     .footer-grid {
         grid-template-columns: 1fr;
     }
+
     .footer-brand {
         grid-column: span 1;
     }
+
     .footer-bottom {
         flex-direction: column;
         gap: 20px;
@@ -1098,7 +1102,7 @@ main {
         padding-bottom: 2rem;
         gap: 20px;
     }
-    
+
     .header-right {
         width: 100%;
         justify-content: center;
@@ -1136,8 +1140,177 @@ main {
         display: block;
         overflow-x: auto;
     }
-    
+
     .pricing-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* --- Support AI Widget Styles --- */
+.support-widget {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9999;
+}
+
+.support-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: none;
+}
+
+.support-btn:hover {
+    transform: scale(1.1) rotate(10deg);
+}
+
+.support-chat {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: var(--card-bg);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    transform-origin: bottom right;
+}
+
+.support-chat.hidden {
+    display: none;
+    transform: scale(0.8) translateY(20px);
+    opacity: 0;
+}
+
+.support-chat-header {
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.support-chat-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-main);
+}
+
+.support-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scrollbar-width: thin;
+}
+
+.msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.msg-ai {
+    background: rgba(255, 255, 255, 0.08);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    color: var(--text-main);
+}
+
+.msg-user {
+    background: var(--primary-color);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.support-input-area {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.support-input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.talk-to-human-btn {
+    margin-top: 10px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.talk-to-human-btn:hover {
+    background: #e1306c;
+    border-color: transparent;
+    color: white;
+}
+
+/* PWA Logo Indicator */
+.rae-logo {
+    cursor: pointer;
+    transition: all 0.4s ease;
+}
+
+.rae-logo:hover {
+    filter: drop-shadow(0 0 10px var(--primary-color));
+    transform: scale(1.05);
+}
+
+@media (max-width: 480px) {
+    .support-widget {
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .support-chat {
+        width: calc(100vw - 40px);
+        height: 60vh;
+        bottom: 70px;
+        right: 0px;
     }
 }

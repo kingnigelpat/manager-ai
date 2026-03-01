@@ -421,6 +421,44 @@ class AI_Engine:
         except Exception as e:
             return "Unable to rewrite hooks right now."
 
+    def support_chat(self, user_question, history=None):
+        system_prompt = """
+        You are 'Rae', the official Support AI for Manager AI.
+        Manager AI is an AI-powered content strategist tool for social media growth.
+        
+        KEY INFO:
+        - 3 Plans: 
+          1. Starter: 5,000 Naira/month (10 generations per week).
+          2. Pro: 25,000 Naira/month (Unlimited generations, Pro tools).
+          3. Business: 75,000 Naira/month (Priority, Brand Tone memory).
+        - Features: Big Idea generation, 7-Day Content Plan, CTA Optimizer, Hook Rewriter.
+        - Payment: Users pay via GTB (Bank Transfer or Card) then upload a receipt screenshot in the 'Billing' section. An admin verifies it.
+        - Alternative Payments: If a user can't pay via GTB, they can click 'Request Another Method' in the pricing modal.
+        - Redirection: If you cannot solve the user's problem or they explicitly want to speak to a human, tell them to click the 'Talk to Human' button in the chat interface.
+        - The 'Talk to Human' button will redirect them to our Instagram: https://www.instagram.com/rae__hub
+        
+        GUIDELINES:
+        - Be friendly, professional, and concise. 
+        - Use a helpful, encouraging tone.
+        - If the user asks about something unrelated to Manager AI, politely bring them back to the topic.
+        """
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            # history should be a list of {"role": "user/assistant", "content": "..."}
+            messages.extend(history[-10:]) # Keep last 10 messages for context
+        messages.append({"role": "user", "content": user_question})
+        
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=messages
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Support AI Error: {e}")
+            return "Hi there! I'm having a small technical issue. Please try again or head over to our Instagram @rae__hub and send us a DM if you need urgent help!"
+
 ai_engine = AI_Engine()
 
 # Login Decorator
@@ -988,6 +1026,22 @@ def internal_error(e):
         "error": "SERVER_ERROR", 
         "message": f"Something went wrong on our end. Error: {str(original_exception)[:200]}"
     }), 500
+
+@app.route('/api/support', methods=['POST'])
+def support_api():
+    try:
+        data = request.get_json()
+        user_question = data.get('question')
+        history = data.get('history', [])
+        
+        if not user_question:
+            return jsonify({"error": "Question is required"}), 400
+            
+        answer = ai_engine.support_chat(user_question, history)
+        return jsonify({"answer": answer})
+    except Exception as e:
+        print(f"Support API Error: {e}")
+        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
 
 @app.route('/robots.txt')
 def robots():
