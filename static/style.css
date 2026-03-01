@@ -1414,7 +1414,7 @@ main {
     background: rgba(225, 48, 108, 0.05);
 }
 
-/* Mobile Fixes - The "No Excuses" Version */
+/* Mobile Fixes - Keyboard Interaction Logic */
 @media (max-width: 480px) {
     .rae-care-widget {
         bottom: 20px;
@@ -1422,26 +1422,43 @@ main {
     }
 
     .rae-care-window {
-        bottom: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        max-height: 100% !important;
-        border-radius: 0 !important;
+        bottom: 0px;
+        right: 0px;
+        width: 100vw;
+        height: 100vh;
+        height: 100svh;
+        /* Smallest Viewport Height (safe for keyboard) */
+        border-radius: 0;
+        border: none;
         z-index: 2147483647;
     }
 
     .rae-care-header {
-        padding-top: calc(env(safe-area-inset-top) + 15px);
+        padding-top: calc(env(safe-area-inset-top) + 10px);
+        flex-shrink: 0;
+    }
+
+    .rae-care-body {
+        padding: 15px;
     }
 
     .rae-care-footer {
-        padding-bottom: calc(env(safe-area-inset-bottom) + 15px);
+        padding: 15px;
+        padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
         background: #0f172a;
+        flex-shrink: 0;
     }
 
-    .msg-content {
-        font-size: 1rem;
+    /* Fixed: The input box was too small/invisible */
+    .rae-input-wrapper {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    #support-input {
+        font-size: 16px !important;
+        /* Ensure native keyboard uses correct height */
+        height: 50px;
     }
 }
 

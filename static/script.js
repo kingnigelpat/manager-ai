@@ -269,17 +269,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeChat) closeChat.addEventListener('click', toggleChat);
 
     if (supportInput) {
-        // Fix: Ensure input remains visible when keyboard opens on mobile
+        // Fix: Keyboard Visibility Logic for iOS/Android
         const handleVisualViewportChange = () => {
             if (window.visualViewport && window.innerWidth < 480) {
-                const height = window.visualViewport.height;
-                supportWindow.style.height = `${height}px`;
-                supportWindow.style.bottom = `${window.innerHeight - window.visualViewport.height}px`;
+                const vv = window.visualViewport;
+                const offset = window.innerHeight - vv.height;
+
+                // Adjust chat window to sit exactly in the visible area
+                supportWindow.style.height = `${vv.height}px`;
+                supportWindow.style.bottom = `${offset}px`;
 
                 // Keep scrolled to bottom
                 setTimeout(() => {
-                    supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
-                }, 100);
+                    supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'auto' });
+                }, 50);
             }
         };
 
@@ -289,7 +292,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         supportInput.addEventListener('focus', () => {
-            setTimeout(handleVisualViewportChange, 300);
+            setTimeout(handleVisualViewportChange, 100);
+        });
+
+        supportInput.addEventListener('blur', () => {
+            if (window.innerWidth < 480) {
+                supportWindow.style.height = '100svh';
+                supportWindow.style.bottom = '0px';
+            }
         });
     }
 
