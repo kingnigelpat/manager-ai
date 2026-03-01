@@ -56,8 +56,10 @@ body {
     transition: background-color 0.5s ease, color 0.5s ease;
     /* Deep space mesh gradient */
     background-image:
-        radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(3, 0, 20, 1) 0%, rgba(3, 0, 20, 0.95) 100%);
+    background-attachment: fixed;
 }
 
 [data-theme="light"] body {
@@ -176,10 +178,10 @@ h3,
     padding: 3rem;
     width: 95%;
     max-width: 800px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     position: relative;
     overflow: hidden;
-    transition: all 0.5s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 20px auto;
 }
 
@@ -334,7 +336,8 @@ textarea {
     padding: 14px;
     border-radius: 12px;
     font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
+    font-size: 16px;
+    /* Preventing iOS auto-zoom on focus */
     transition: all 0.2s ease;
 }
 
@@ -891,7 +894,9 @@ main {
 
 @media (max-width: 480px) {
     .intro-hero h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
+        /* Slightly smaller for very small screens */
+        letter-spacing: -0.01em;
     }
 
     .modal {
@@ -900,7 +905,12 @@ main {
     }
 
     .logo-text {
-        font-size: 1.1rem;
+        font-size: 1rem;
+    }
+
+    .logo-text small {
+        display: none;
+        /* Hide the tag line on tiny screens */
     }
 }
 
@@ -1130,8 +1140,10 @@ main {
         grid-template-columns: 1fr;
     }
 
-    .action-area button {
+    .action-area button,
+    .action-row button {
         width: 100%;
+        margin-bottom: 5px;
     }
 
     .result-markdown-body {
@@ -1161,9 +1173,11 @@ main {
 
     .container {
         padding: 1.5rem 1rem !important;
-        border-radius: 0;
-        margin: 0;
-        width: 100%;
+        border-radius: 16px;
+        /* Keeping a slight radius for premium feel */
+        margin: 10px;
+        /* Adding small margin so it doesn't touch edges */
+        width: calc(100% - 20px);
     }
 
     .pricing-grid {
@@ -1256,6 +1270,12 @@ main {
         font-size: 16px !important;
         /* Ensure native keyboard uses correct height */
         height: 50px;
+    }
+
+    .payment-container {
+        margin: 20px 10px;
+        padding: 20px;
+        width: calc(100% - 20px);
     }
 }
 

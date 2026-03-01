@@ -164,11 +164,62 @@ document.addEventListener('DOMContentLoaded', () => {
     if (weeklyPlanBtn) {
         weeklyPlanBtn.addEventListener('click', () => {
             if (!businessInput.value.trim()) {
-                Swal.fire({ icon: 'warning', title: 'Missing Info', text: 'Please tell us about your business first!' });
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Info',
+                    text: 'Please tell us about your business first!',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)'
+                });
                 return;
             }
             callAI('weekly_plan').then(data => {
-                displayResult(data);
+                const rawPlan = data.idea;
+                // Configure marked for safe and clean rendering
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    headerIds: false
+                });
+                const htmlPlan = marked.parse(rawPlan);
+
+                Swal.fire({
+                    title: '🗓️ 7-Day Strategy Plan',
+                    html: `
+                        <div class="result-markdown-body" style="text-align: left; max-height: 50vh; overflow-y: auto; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); font-size: 0.9rem;">
+                            ${htmlPlan}
+                        </div>
+                        <div style="background: rgba(99, 102, 241, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary-color);">
+                            <p style="font-size: 0.85rem; margin-bottom: 12px; color: var(--text-muted);">Please copy your plan below. It will not be saved on this page.</p>
+                            <button id="modal-copy-btn" class="primary-btn" style="width: 100%; padding: 14px; font-size: 1rem;">
+                                <i class="fa-solid fa-copy" style="margin-right: 8px;"></i> Copy Full Strategy
+                            </button>
+                        </div>
+                    `,
+                    width: '800px',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)',
+                    didOpen: () => {
+                        const copyBtn = document.getElementById('modal-copy-btn');
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', () => {
+                                navigator.clipboard.writeText(rawPlan).then(() => {
+                                    const originalHTML = copyBtn.innerHTML;
+                                    copyBtn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 8px;"></i> Strategy Copied!';
+                                    copyBtn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                                    setTimeout(() => {
+                                        copyBtn.innerHTML = originalHTML;
+                                        copyBtn.style.background = '';
+                                    }, 3000);
+                                });
+                            });
+                        }
+                    }
+                });
+            }).catch(err => {
+                console.error("AI Plan Error:", err);
             });
         });
     }
