@@ -219,39 +219,50 @@
         </div>
     </div>
 
-    <!-- AI Support Chat Widget -->
-    <div class="support-widget" id="support-widget">
-        <button class="support-btn" id="support-toggle" title="Chat with Raehub Care">
-            <i class="fa-solid fa-headset"></i>
+    <!-- AI Support Chat Widget (Premium Redesign) -->
+    <div class="rae-care-widget" id="support-widget">
+        <!-- Floating Toggle Button -->
+        <button class="rae-care-btn" id="support-toggle" title="Talk to Rae">
+            <span class="pulse-ring"></span>
+            <i class="fa-solid fa-sparkles"></i>
         </button>
 
-        <div class="support-chat hidden" id="support-window">
-            <div class="support-chat-header">
-                <h3><img src="{{ url_for('static', filename='rae_logo.png') }}"
-                        style="width: 24px; border-radius: 4px;"> Rae Care</h3>
-                <button id="close-chat"
-                    style="background: none; border: none; color: var(--text-muted); cursor: pointer;"><i
-                        class="fa-solid fa-xmark"></i></button>
+        <!-- Chat Overlay -->
+        <div class="rae-care-window hidden" id="support-window">
+            <div class="rae-care-header">
+                <div class="rae-care-id">
+                    <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-avatar">
+                    <div class="rae-status">
+                        <h4>Rae AI</h4>
+                        <span class="online-tag">Online & Ready</span>
+                    </div>
+                </div>
+                <button class="rae-close" id="close-chat"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <div class="support-messages" id="support-messages">
-                <div class="msg msg-ai">Hi! I'm <b>Rae</b>, your Manager AI Assistant. How can I help you grow today?
+            <div class="rae-care-body" id="support-messages">
+                <div class="chat-date">Today</div>
+                <div class="msg ai">
+                    <div class="msg-content">
+                        Hello! I'm <strong>Rae</strong>. I can help you with your content strategy, billing, or
+                        technical issues.
+                        <br><br>
+                        What's on your mind?
+                    </div>
                 </div>
             </div>
 
-            <div class="support-input-area">
-                <div style="width: 100%;">
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="support-input" id="support-input" placeholder="Type your problem..."
-                            required>
-                        <button class="primary-btn support-send" id="support-send">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    <button class="talk-to-human-btn" id="talk-to-human">
-                        <i class="fa-brands fa-instagram"></i> Talk to a Human
+            <div class="rae-care-footer">
+                <div class="rae-input-wrapper">
+                    <input type="text" id="support-input" placeholder="Type a message..." autocomplete="off">
+                    <button id="support-send" class="rae-send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
+                <!-- Support Escalation -->
+                <button class="rae-human-bridge" id="talk-to-human">
+                    <i class="fa-brands fa-instagram"></i> Need a human? Chat on Instagram
+                </button>
             </div>
         </div>
     </div>

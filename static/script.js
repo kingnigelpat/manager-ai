@@ -295,19 +295,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const appendMsg = (text, role) => {
         const msgDiv = document.createElement('div');
-        msgDiv.className = `msg msg-${role}`;
+        msgDiv.className = `msg ${role}`; // role is 'ai' or 'user'
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'msg-content';
 
         // Use marked for AI to render markdown/formatting
         if (role === 'ai') {
-            msgDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text;
+            contentDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text;
         } else {
-            msgDiv.textContent = text;
+            contentDiv.textContent = text;
         }
 
+        msgDiv.appendChild(contentDiv);
         supportMessages.appendChild(msgDiv);
         supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
 
-        // Add to history for context (AI needs role 'user' or 'assistant')
+        // Add to history for context
         chatHistory.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
     };
 
@@ -320,13 +324,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Show typing indicator
         const typingDiv = document.createElement('div');
-        typingDiv.className = 'msg msg-ai';
-        typingDiv.innerHTML = '<i class="fa-solid fa-sync fa-spin"></i> Rae is thinking...';
+        typingDiv.className = 'msg ai typing-indicator';
+        typingDiv.innerHTML = '<div class="msg-content"><i class="fa-solid fa-sync fa-spin"></i> Rae is thinking...</div>';
         supportMessages.appendChild(typingDiv);
         supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
 
         try {
             const response = await fetch('/api/support', {
@@ -338,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
             const data = await response.json();
 
-            supportMessages.removeChild(typingDiv);
+            if (typingDiv.parentNode) supportMessages.removeChild(typingDiv);
             if (data.answer) {
                 appendMsg(data.answer, 'ai');
             } else {
