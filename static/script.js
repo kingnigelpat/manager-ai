@@ -242,197 +242,37 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+});
 
-    // --- AI Support Chat Logic ---
-    const supportToggle = document.getElementById('support-toggle');
-    const supportWindow = document.getElementById('support-window');
-    const closeChat = document.getElementById('close-chat');
-    const supportSend = document.getElementById('support-send');
-    const supportInput = document.getElementById('support-input');
-    const supportMessages = document.getElementById('support-messages');
-    const talkToHuman = document.getElementById('talk-to-human');
+// --- Fixed PWA Installation Logic ---
+let deferredPrompt;
 
-    let chatHistory = [];
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('✅ PWA Install Prompt captured!');
 
-    const toggleChat = () => {
-        supportWindow.classList.toggle('hidden');
-        if (!supportWindow.classList.contains('hidden')) {
-            supportInput.focus();
-        } else {
-            // Reset dynamic styles when closed
-            supportWindow.style.height = '';
-            supportWindow.style.bottom = '';
-        }
-    };
-
-    if (supportToggle) supportToggle.addEventListener('click', toggleChat);
-    if (closeChat) closeChat.addEventListener('click', toggleChat);
-
-    if (supportInput) {
-        // --- Auto-resize logic (ChatGPT Style) ---
-        const resizeInput = () => {
-            supportInput.style.height = 'auto';
-            const newHeight = Math.min(supportInput.scrollHeight, 150); // Max 6 lines
-            supportInput.style.height = `${newHeight}px`;
-
-            // On mobile, trigger viewport adjustment if needed
-            if (window.innerWidth < 480) {
-                setTimeout(handleVisualViewportChange, 10);
-            }
-        };
-
-        supportInput.addEventListener('input', resizeInput);
-
-        // --- Enter Key Logic ---
-        supportInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendSupportQuery();
-            }
-        });
-
-        // Fix: Keyboard Visibility Logic for iOS/Android
-        const handleVisualViewportChange = () => {
-            if (window.visualViewport && window.innerWidth < 480) {
-                const vv = window.visualViewport;
-                const offset = window.innerHeight - vv.height;
-
-                // Adjust chat window to sit exactly in the visible area
-                supportWindow.style.height = `${vv.height}px`;
-                supportWindow.style.bottom = `${offset}px`;
-
-                // Keep scrolled to bottom
-                setTimeout(() => {
-                    supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'auto' });
-                }, 50);
-            }
-        };
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleVisualViewportChange);
-            window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
-        }
-
-        supportInput.addEventListener('focus', () => {
-            setTimeout(handleVisualViewportChange, 100);
-        });
-
-        supportInput.addEventListener('blur', () => {
-            if (window.innerWidth < 480) {
-                supportWindow.style.height = '100svh';
-                supportWindow.style.bottom = '0px';
-            }
-        });
-    }
-
-    const appendMsg = (text, role) => {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `msg ${role}`; // role is 'ai' or 'user'
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'msg-content';
-
-        // Use marked for AI to render markdown/formatting
-        if (role === 'ai') {
-            contentDiv.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text;
-        } else {
-            contentDiv.textContent = text;
-        }
-
-        msgDiv.appendChild(contentDiv);
-        supportMessages.appendChild(msgDiv);
-        supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
-
-        // Add to history for context
-        chatHistory.push({ role: role === 'ai' ? 'assistant' : 'user', content: text });
-    };
-
-    const sendSupportQuery = async () => {
-        const query = supportInput.value.trim();
-        if (!query) return;
-
-        appendMsg(query, 'user');
-        supportInput.value = '';
-
-        // Reset height (ChatGPT style)
-        supportInput.style.height = 'auto';
-
-        // Show typing indicator
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'msg ai typing-indicator';
-        typingDiv.innerHTML = '<div class="msg-content"><i class="fa-solid fa-sync fa-spin"></i> Rae is thinking...</div>';
-        supportMessages.appendChild(typingDiv);
-        supportMessages.scrollTo({ top: supportMessages.scrollHeight, behavior: 'smooth' });
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
-
-        try {
-            const response = await fetch('/api/support', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: query, history: chatHistory.slice(-5) }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            const data = await response.json();
-
-            if (typingDiv.parentNode) supportMessages.removeChild(typingDiv);
-            if (data.answer) {
-                appendMsg(data.answer, 'ai');
-            } else {
-                appendMsg("Sorry, I'm a bit overwhelmed. Ping us on Instagram!", 'ai');
-            }
-        } catch (error) {
-            clearTimeout(timeoutId);
-            if (typingDiv.parentNode) supportMessages.removeChild(typingDiv);
-            const errMsg = error.name === 'AbortError' ? "Request timed out. Slow internet? 📶" : "Connection issue. Try Instagram!";
-            appendMsg(errMsg, 'ai');
-        }
-    };
-
-    if (supportSend) supportSend.addEventListener('click', sendSupportQuery);
-    if (supportInput) {
-        supportInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendSupportQuery();
-        });
-    }
-
-    if (talkToHuman) {
-        talkToHuman.addEventListener('click', () => {
-            window.open('https://www.instagram.com/rae__hub', '_blank');
-        });
-    }
-
-    // --- Fixed PWA Installation Logic ---
-    let deferredPrompt;
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        console.log('✅ PWA Install Prompt captured!');
-
-        document.querySelectorAll('.rae-logo').forEach(logo => {
-            logo.style.cursor = 'pointer';
-            logo.title = 'Click logo to Install App';
-            // Visual hint already in CSS
-        });
+    document.querySelectorAll('.rae-logo').forEach(logo => {
+        logo.style.cursor = 'pointer';
+        logo.title = 'Click logo to Install App';
+        // Visual hint already in CSS
     });
+});
 
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('rae-logo') || e.target.closest('.rae-logo')) {
-            console.log('Logo clicked. Prompt state:', deferredPrompt ? 'Available' : 'Unavailable');
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('rae-logo') || e.target.closest('.rae-logo')) {
+        console.log('Logo clicked. Prompt state:', deferredPrompt ? 'Available' : 'Unavailable');
 
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User Choice: ${outcome}`);
-                deferredPrompt = null;
-            } else {
-                // Better UX: Tell them how to install if browser prompt hasn't fired
-                Swal.fire({
-                    title: 'How to Install',
-                    html: `
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User Choice: ${outcome}`);
+            deferredPrompt = null;
+        } else {
+            // Better UX: Tell them how to install if browser prompt hasn't fired
+            Swal.fire({
+                title: 'How to Install',
+                html: `
                         <div style="text-align: left; font-size: 0.95rem;">
                             <p>To install <b>Manager AI</b> as an app:</p>
                             <ol>
@@ -442,24 +282,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p style="font-size: 0.8rem; color: var(--text-muted);">Note: Ensure you are using Chrome or Safari for the best experience.</p>
                         </div>
                     `,
-                    icon: 'info',
-                    background: 'var(--card-bg)',
-                    color: 'var(--text-main)',
-                    confirmButtonColor: 'var(--primary-color)'
-                });
-            }
+                icon: 'info',
+                background: 'var(--card-bg)',
+                color: 'var(--text-main)',
+                confirmButtonColor: 'var(--primary-color)'
+            });
         }
-    });
+    }
+});
 
-    window.addEventListener('appinstalled', () => {
-        console.log('🚀 App Installed Successfully');
-        Swal.fire({
-            icon: 'success',
-            title: 'Great Success!',
-            text: 'Manager AI has been added to your Home Screen.',
-            timer: 4000,
-            showConfirmButton: false
-        });
+window.addEventListener('appinstalled', () => {
+    console.log('🚀 App Installed Successfully');
+    Swal.fire({
+        icon: 'success',
+        title: 'Great Success!',
+        text: 'Manager AI has been added to your Home Screen.',
+        timer: 4000,
+        showConfirmButton: false
     });
-
 });

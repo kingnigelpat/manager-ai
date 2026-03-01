@@ -220,52 +220,16 @@
         </div>
     </div>
 
-    <!-- AI Support Chat Widget (Premium Redesign) -->
-    <div class="rae-care-widget" id="support-widget">
-        <!-- Floating Toggle Button -->
-        <button class="rae-care-btn" id="support-toggle" title="Talk to Rae">
-            <span class="pulse-ring"></span>
-            <i class="fa-solid fa-sparkles"></i>
-        </button>
-
-        <!-- Chat Overlay -->
-        <div class="rae-care-window hidden" id="support-window">
-            <div class="rae-care-header">
-                <div class="rae-care-id">
-                    <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-avatar">
-                    <div class="rae-status">
-                        <h4>Rae AI</h4>
-                        <span class="online-tag">Online & Ready</span>
-                    </div>
-                </div>
-                <button class="rae-close" id="close-chat"><i class="fa-solid fa-xmark"></i></button>
+    <!-- Direct Instagram Support Float -->
+    <div class="support-float-container">
+        <a href="https://www.instagram.com/rae__hub" target="_blank" class="premium-support-btn"
+            title="Get Support on Instagram">
+            <div class="support-label">Live Support</div>
+            <div class="ig-icon-wrapper">
+                <i class="fa-brands fa-instagram"></i>
+                <span class="online-indicator"></span>
             </div>
-
-            <div class="rae-care-body" id="support-messages">
-                <div class="chat-date">Today</div>
-                <div class="msg ai">
-                    <div class="msg-content">
-                        Hello! I'm <strong>Rae</strong>. I can help you with your content strategy, billing, or
-                        technical issues.
-                        <br><br>
-                        What's on your mind?
-                    </div>
-                </div>
-            </div>
-
-            <div class="rae-care-footer">
-                <div class="rae-input-wrapper">
-                    <textarea id="support-input" placeholder="Message Rae..." rows="1" autocomplete="off"></textarea>
-                    <button id="support-send" class="rae-send-btn">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </button>
-                </div>
-                <!-- Support Escalation -->
-                <button class="rae-human-bridge" id="talk-to-human">
-                    <i class="fa-brands fa-instagram"></i> Need a human? Chat on Instagram
-                </button>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- Firebase SDKs -->
