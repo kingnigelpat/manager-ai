@@ -243,4 +243,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- PWA Installation Logic ---
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        console.log('PWA installation prompt captured');
+
+        // Indicate the logo is interactive for installation
+        document.querySelectorAll('.rae-logo').forEach(logo => {
+            logo.style.cursor = 'pointer';
+            logo.setAttribute('title', 'Touch Logo to Install App');
+            // Add a subtle hint that it's interactive
+            logo.style.transition = 'filter 0.3s ease';
+            logo.addEventListener('mouseenter', () => logo.style.filter = 'drop-shadow(0 0 8px var(--primary-color))');
+            logo.addEventListener('mouseleave', () => logo.style.filter = 'none');
+        });
+    });
+
+    // Handle Logo Interaction for Installation
+    document.addEventListener('click', async (e) => {
+        // Check if the click was on the logo image or its container
+        if (e.target.classList.contains('rae-logo') || e.target.closest('.logo')) {
+            if (deferredPrompt) {
+                console.log('Triggering PWA install prompt...');
+                // Show the install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to install prompt: ${outcome}`);
+                // Clear the prompt stash
+                deferredPrompt = null;
+            }
+        }
+    });
+
+    window.addEventListener('appinstalled', (e) => {
+        console.log('PWA was successfully installed');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'App Installed!',
+                text: 'Manager AI has been added to your device.',
+                timer: 3000,
+                showConfirmButton: false,
+                background: 'var(--card-bg)',
+                color: 'var(--text-main)'
+            });
+        }
+    });
+
 });
