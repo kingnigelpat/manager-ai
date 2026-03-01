@@ -269,6 +269,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeChat) closeChat.addEventListener('click', toggleChat);
 
     if (supportInput) {
+        // --- Auto-resize logic (ChatGPT Style) ---
+        const resizeInput = () => {
+            supportInput.style.height = 'auto';
+            const newHeight = Math.min(supportInput.scrollHeight, 150); // Max 6 lines
+            supportInput.style.height = `${newHeight}px`;
+
+            // On mobile, trigger viewport adjustment if needed
+            if (window.innerWidth < 480) {
+                setTimeout(handleVisualViewportChange, 10);
+            }
+        };
+
+        supportInput.addEventListener('input', resizeInput);
+
+        // --- Enter Key Logic ---
+        supportInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendSupportQuery();
+            }
+        });
+
         // Fix: Keyboard Visibility Logic for iOS/Android
         const handleVisualViewportChange = () => {
             if (window.visualViewport && window.innerWidth < 480) {
@@ -331,6 +353,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendMsg(query, 'user');
         supportInput.value = '';
+
+        // Reset height (ChatGPT style)
+        supportInput.style.height = 'auto';
 
         // Show typing indicator
         const typingDiv = document.createElement('div');

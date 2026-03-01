@@ -1352,10 +1352,12 @@ main {
 
 .rae-input-wrapper {
     display: flex;
+    align-items: flex-end;
+    /* Align button to bottom of growing textarea */
     gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 6px;
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 10px 12px;
+    border-radius: 20px;
     border: 1px solid var(--border-color);
     transition: all 0.3s;
 }
@@ -1370,10 +1372,16 @@ main {
     background: none;
     border: none;
     color: var(--text-main);
-    padding: 10px 15px;
+    padding: 8px 4px;
     font-size: 1rem;
-    /* 16px prevents mobile zoom */
     outline: none;
+    resize: none;
+    /* Disable manual resize */
+    max-height: 150px;
+    /* Approx 6 lines */
+    min-height: 24px;
+    line-height: 1.5;
+    overflow-y: auto;
 }
 
 .rae-send-btn {
