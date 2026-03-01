@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upgrade Plan | The Manager AI</title>
+    <title>Pricing & Plans | Manager AI</title>
+    <meta name="description"
+        content="Choose the perfect growth plan for your business. Affordable AI-powered social media management and strategy.">
+    <link rel="canonical" href="https://manager.raehub.live/pricing">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
@@ -129,53 +132,124 @@
             <a href="{{ url_for('dashboard') }}" class="secondary-btn">Close</a>
         </header>
 
-        <h1>Choose Your Growth Plan</h1>
-        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">Unlock the full power of AI or get
-            hands-on expert management.</p>
+        <h1>Invest in Your Growth</h1>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">High-impact strategy for every budget.
+            Content that converts, prices that make sense.</p>
 
         <div class="pricing-grid">
-            <!-- 5k Plan -->
+            <!-- Starter Plan -->
             <div class="plan-card">
-                <div class="popular-badge">POPULAR</div>
                 <div class="plan-header">
-                    <div class="plan-name">AI Content Plan</div>
-                    <div class="plan-price">₦5,000<span class="plan-period">/month</span></div>
+                    <div class="plan-name">🟢 Starter Plan</div>
+                    <div class="plan-price" id="starter-price">₦5,000<span class="plan-period">/month</span></div>
                 </div>
                 <div class="plan-features">
                     <ul>
-                        <li><i class="fa-solid fa-check"></i> Unlimited AI Idea Generation</li>
-                        <li><i class="fa-solid fa-check"></i> Pidgin & Standard English</li>
-                        <li><i class="fa-solid fa-check"></i> Platform Specific Strategies</li>
-                        <li><i class="fa-solid fa-check"></i> Copy & Paste Captions</li>
-                        <li><i class="fa-solid fa-check"></i> Hashtag Recommendations</li>
+                        <li><i class="fa-solid fa-check"></i> 10 generations per week</li>
+                        <li><i class="fa-solid fa-check"></i> Basic modes</li>
+                        <li><i class="fa-solid fa-check"></i> Standard output</li>
+                        <li><i class="fa-solid fa-check"></i> No brand memory</li>
+                        <li><i class="fa-solid fa-check"></i> Limit usage, not intelligence</li>
                     </ul>
                 </div>
-                <a href="{{ url_for('plan_5k') }}" class="glow-btn"
+                <a href="{{ url_for('choose_plan', plan_name='starter') }}" id="starter-link" class="glow-btn"
                     style="text-align: center; text-decoration: none; display: block;">Get Started</a>
             </div>
 
-            <!-- 50k Plan -->
-            <div class="plan-card" style="border-color: var(--secondary-color);">
+            <!-- Pro Plan -->
+            <div class="plan-card" style="border-color: #3b82f6;">
+                <div class="popular-badge" style="background: #3b82f6;">BEST VALUE</div>
                 <div class="plan-header">
-                    <div class="plan-name">Social Media Management</div>
-                    <div class="plan-price">₦50,000<span class="plan-period">/month</span></div>
+                    <div class="plan-name">🔵 Pro Plan</div>
+                    <div class="plan-price" id="pro-price">₦25,000<span class="plan-period">/month</span></div>
                 </div>
                 <div class="plan-features">
                     <ul>
-                        <li><i class="fa-solid fa-check"></i> <strong>Everything in AI Plan</strong></li>
-                        <li><i class="fa-solid fa-check"></i> Dedicated Account Manager</li>
-                        <li><i class="fa-solid fa-check"></i> Content Calendar Creation</li>
-                        <li><i class="fa-solid fa-check"></i> Monthly Performance Report</li>
-                        <li><i class="fa-solid fa-check"></i> Engagement Strategy</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Unlimited generations</strong></li>
+                        <li><i class="fa-solid fa-check"></i> Advanced modes</li>
+                        <li><i class="fa-solid fa-check"></i> Weekly content plan generator</li>
+                        <li><i class="fa-solid fa-check"></i> CTA optimization</li>
+                        <li><i class="fa-solid fa-check"></i> Hook rewriting tool</li>
                     </ul>
                 </div>
-                <!-- Redirect to Instagram DM or Email -->
-                <a href="https://ig.me/m/rae_manager_ai" target="_blank" class="secondary-btn"
-                    style="width: 100%; text-align: center; justify-content: center;">Contact for 50k Plan</a>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Redirects to Instagram DM</p>
+                <a href="{{ url_for('choose_plan', plan_name='pro') }}" id="pro-link" class="glow-btn"
+                    style="text-align: center; text-decoration: none; display: block; background: #3b82f6;">Go Pro</a>
+            </div>
+
+            <!-- Business Plan -->
+            <div class="plan-card" style="border-color: #ef4444;">
+                <div class="plan-header">
+                    <div class="plan-name">🔴 Business Plan</div>
+                    <div class="plan-price" id="business-price">₦75,000<span class="plan-period">/month</span></div>
+                </div>
+                <div class="plan-features">
+                    <ul>
+                        <li><i class="fa-solid fa-check"></i> <strong>Brand tone memory</strong></li>
+                        <li><i class="fa-solid fa-check"></i> Personalized content style</li>
+                        <li><i class="fa-solid fa-check"></i> Priority queue processing</li>
+                        <li><i class="fa-solid fa-check"></i> Monthly strategy export</li>
+                        <li><i class="fa-solid fa-check"></i> 24/7 Priority Support</li>
+                    </ul>
+                </div>
+                <a href="{{ url_for('choose_plan', plan_name='business') }}" id="business-link" class="glow-btn"
+                    style="text-align: center; text-decoration: none; display: block; background: #ef4444;">Scale Up</a>
             </div>
         </div>
     </div>
+
+    <!-- Location-Aware Pricing Script -->
+    <script>
+        const pricingData = {
+            'NG': { currency: '₦', starter: '5,000', pro: '25,000', business: '75,000' },
+            'GH': { currency: 'GH₵', starter: '150', pro: '380', business: '1,500' },
+            'KE': { currency: 'KSh', starter: '1,300', pro: '3,200', business: '12,000' },
+            'ZA': { currency: 'R', starter: '190', pro: '470', business: '1,800' },
+            'EG': { currency: 'E£', starter: '310', pro: '770', business: '3,000' },
+            'CM': { currency: 'CFA', starter: '6,000', pro: '15,000', business: '60,000' },
+            'DEFAULT': { currency: '$', starter: '10', pro: '25', business: '99' }
+        };
+
+        const africanCountries = ['NG', 'GH', 'KE', 'ZA', 'EG', 'CM', 'ET', 'MA', 'DZ', 'SD', 'UG', 'TN', 'AO', 'CI', 'SN', 'LY', 'CD', 'MW', 'ZM', 'TZ'];
+
+        async function detectLocation() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                const country = data.country_code;
+
+                let set = pricingData[country];
+
+                // If in Africa but not in our explicit map, use a generic conversion or default
+                if (!set && africanCountries.includes(country)) {
+                    // Just fallback to USD for now if not in the main African tiers
+                    set = pricingData['DEFAULT'];
+                }
+
+                if (!set) set = pricingData['DEFAULT'];
+
+                updatePricing(set, country);
+            } catch (error) {
+                console.error("Location detection failed", error);
+                updatePricing(pricingData['DEFAULT'], 'US');
+            }
+        }
+
+        function updatePricing(set, country) {
+            document.getElementById('starter-price').innerHTML = `${set.currency}${set.starter}<span class="plan-period">/month</span>`;
+            document.getElementById('pro-price').innerHTML = `${set.currency}${set.pro}<span class="plan-period">/month</span>`;
+            document.getElementById('business-price').innerHTML = `${set.currency}${set.business}<span class="plan-period">/month</span>`;
+
+            // Update links with location context
+            const links = ['starter', 'pro', 'business'];
+            links.forEach(l => {
+                const el = document.getElementById(`${l}-link`);
+                const base = el.getAttribute('href');
+                el.setAttribute('href', `${base}?currency=${set.currency}&amount=${set[l]}&country=${country}`);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', detectLocation);
+    </script>
 </body>
 
 </html>

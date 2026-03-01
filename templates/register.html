@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join Manager AI by Rae</title>
+    <title>Get Started | Manager AI</title>
+    <meta name="description"
+        content="Create your Manager AI account and start generating high-converting content for your brand.">
+    <link rel="canonical" href="https://manager.raehub.live/register">
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
 
@@ -30,10 +33,9 @@
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <div
-            style="background-color: rgba(239, 68, 68, 0.1); color: #f87171; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.2);">
+        <div class="flash-message flash-error">
             {% for message in messages %}
-            <p style="margin: 0; font-size: 0.9rem;">{{ message }}</p>
+            <p style="margin: 0;">{{ message }}</p>
             {% endfor %}
         </div>
         {% endif %}
@@ -104,6 +106,8 @@
                         msg = "This email is already registered. Please login.";
                     } else if (error.code === 'auth/weak-password') {
                         msg = "Password should be at least 6 characters.";
+                    } else if (error.code === 'auth/network-request-failed') {
+                        msg = "Network Error: Failed to connect to authentication server. Check your internet or disable VPN/Ad-blockers.";
                     }
                     errorMsg.innerText = msg;
                     errorMsg.style.display = 'block';

@@ -29,8 +29,7 @@
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <div
-            style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 20px; color: #fca5a5; text-align: center;">
+        <div class="flash-message flash-error">
             {% for message in messages %}
             {{ message }}
             {% endfor %}

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /logout
+
+Sitemap: https://manager.raehub.live/sitemap.xml

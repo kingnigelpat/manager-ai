@@ -81,6 +81,7 @@
             </div>
 
             <form action="{{ url_for('submit_payment') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="plan_id" value="{{ plan_id }}">
                 <div class="form-group">
                     <label>Your Full Name</label>
                     <input type="text" name="full_name" required placeholder="e.g. John Doe">
@@ -104,9 +105,17 @@
 
                 <button type="submit" class="glow-btn">Submit Payment Proof</button>
             </form>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" onclick="requestPaymentMethod()"
+                    style="color: var(--text-muted); font-size: 0.9rem; text-decoration: none;">
+                    <i class="fa-solid fa-circle-question"></i> Can't pay with bank? Tell us your preferred method
+                </a>
+            </div>
         </div>
     </div>
 
+    <!-- SweetAlert2 for notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function updateFileName(input) {
             const label = document.getElementById('file-label');
@@ -116,6 +125,61 @@
             } else {
                 label.textContent = 'Click to Upload Image';
                 label.style.color = 'var(--text-muted)';
+            }
+        }
+
+        async function requestPaymentMethod() {
+            const { value: formValues } = await Swal.fire({
+                title: 'Payment Support Request',
+                html:
+                    '<label style="display:block; text-align:left; margin-bottom:5px;">Preferred Payment Method</label>' +
+                    '<input id="swal-payment" class="swal2-input" placeholder="e.g. PayPal, Crypto, USSD">' +
+                    '<label style="display:block; text-align:left; margin-bottom:5px; margin-top:15px;">How should we contact you?</label>' +
+                    '<select id="swal-contact" class="swal2-input">' +
+                    '<option value="instagram">Instagram DM</option>' +
+                    '<option value="x">X (Twitter) DM</option>' +
+                    '<option value="email">Email</option>' +
+                    '</select>' +
+                    '<label style="display:block; text-align:left; margin-bottom:5px; margin-top:15px;">Your Handle or Address</label>' +
+                    '<input id="swal-info" class="swal2-input" placeholder="@username or email address">',
+                focusConfirm: false,
+                showCancelButton: true,
+                preConfirm: () => {
+                    const method = document.getElementById('swal-payment').value;
+                    const contact = document.getElementById('swal-contact').value;
+                    const info = document.getElementById('swal-info').value;
+                    if (!method || !info) {
+                        Swal.showValidationMessage('Please fill in all fields');
+                    }
+                    return { method, contact, info };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const response = await fetch('/api/notify_payment_method', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            method: formValues.method,
+                            contact_method: formValues.contact,
+                            contact_info: formValues.info,
+                            plan: "{{ plan }}"
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Request Sent!',
+                            text: `We will follow up via ${formValues.contact.toUpperCase()} soon. You can also DM us on X: @Raehub_tech`,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire('Error', 'Failed to notify admin. Please try again later.', 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'Failed to connect to server.', 'error');
+                }
             }
         }
     </script>

@@ -3,3 +3,6 @@ openai
 python-dotenv
 gunicorn
 firebase-admin
+cloudinary
+flask-limiter
+flask-talisman

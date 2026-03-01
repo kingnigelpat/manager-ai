@@ -4,27 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager AI by Rae | Your Personal Social Media Strategist</title>
+    <title>Manager AI | Your Professional Social Media Strategist</title>
     <meta name="description"
-        content="Generate high-converting, culturally relevant social media content ideas for your business with Manager AI. Powered by advanced artificial intelligence from Rae.">
-    <meta name="keywords"
-        content="AI social media manager, content strategy, instagram ideas, tiktok content, small business marketing, Rae AI, Nigerian content creator">
-    <meta name="author" content="Rae">
+        content="Scale your brand internationally with Manager AI. Generate high-converting, culturally intelligent content plans for Instagram, TikTok, and X.">
+    <link rel="canonical" href="https://manager.raehub.live/">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://managerai.raehub.live/">
-    <meta property="og:title" content="Manager AI by Rae | Your Personal Social Media Strategist">
+    <meta property="og:url" content="https://manager.raehub.live/">
+    <meta property="og:title" content="Manager AI | Professional Content Strategy & Analytics">
     <meta property="og:description"
-        content="Stop guessing. Start growing. Get custom video scripts and captions in seconds.">
+        content="Stop guessing. Start growing. Global content strategy in seconds for diverse markets.">
     <meta property="og:image" content="{{ url_for('static', filename='rae_logo.png') }}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://managerai.raehub.live/">
-    <meta property="twitter:title" content="Manager AI by Rae">
-    <meta property="twitter:description"
-        content="Stop guessing. Start growing. Get custom video scripts and captions in seconds.">
+    <meta property="twitter:url" content="https://manager.raehub.live/">
+    <meta property="twitter:title" content="Manager AI | Professional Marketing Suite">
+    <meta property="twitter:description" content="Scalable AI-driven marketing strategies for global brands.">
     <meta property="twitter:image" content="{{ url_for('static', filename='rae_logo.png') }}">
 
     <!-- Favicon -->
@@ -34,7 +31,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cloudflare Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 </head>
 
@@ -46,7 +44,10 @@
                 <span class="logo-text">Manager AI <small style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by
                         Rae</small></span>
             </div>
-            <a href="{{ url_for('login') }}" class="secondary-btn">Login</a>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="{{ url_for('login') }}" class="secondary-btn">Login</a>
+                <a href="{{ url_for('register') }}" class="primary-btn" style="padding: 10px 20px;">Get Started</a>
+            </div>
         </header>
 
         <div class="intro-hero" style="animation: float 6s ease-in-out infinite;">
@@ -57,12 +58,14 @@
             <p>Stop guessing what to post. Get high-converting, culturally relevant video ideas tailored to your
                 business in seconds.</p>
 
-            <a href="{{ url_for('register') }}" class="primary-btn" style="padding: 16px 32px; font-size: 1.1rem;">
-                Start Generating <i class="fa-solid fa-arrow-right"></i>
-            </a>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('register') }}" class="primary-btn" style="padding: 16px 32px; font-size: 1.1rem;">
+                    Start Generating <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
         </div>
 
-        <div class="feature-grid">
+        <div class="feature-grid" style="margin-top: 4rem;">
             <div class="feature-card">
                 <div class="feature-icon"><i class="fa-solid fa-globe"></i></div>
                 <h3>Culturally Aware</h3>
@@ -81,6 +84,122 @@
                 </p>
             </div>
         </div>
+
+        <div class="intro-plans" style="margin-top: 6rem; text-align: center;">
+            <div style="margin-bottom: 3rem;">
+                <span class="badge"
+                    style="background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border: 1px solid var(--primary-glow); padding: 8px 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Pricing</span>
+                <h2 style="font-size: 2.5rem; margin-top: 1rem;">Fuel Your Viral Empire</h2>
+            </div>
+
+            <div class="plan-card-mini"
+                style="max-width: 480px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 32px; padding: 3rem; box-shadow: var(--shadow-xl); position: relative; overflow: hidden; backdrop-filter: blur(10px);">
+                <div
+                    style="position: absolute; top: 0; right: 0; background: var(--primary-color); color: white; padding: 8px 40px; transform: rotate(45deg) translate(20px, -20px); font-size: 0.8rem; font-weight: 700;">
+                    POPULAR</div>
+
+                <h3 style="font-size: 1.8rem; color: var(--text-main); margin-bottom: 0.5rem;">Starter Plan</h3>
+                <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 2rem;">World-class strategy for
+                    emerging brands.</p>
+
+                <div
+                    style="font-size: 3.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 2rem; display: flex; align-items: baseline; justify-content: center; gap: 5px;">
+                    ₦5,000<span style="font-size: 1.25rem; color: var(--text-muted); font-weight: 400;">/month</span>
+                </div>
+
+                <ul style="text-align: left; list-style: none; padding: 0; margin-bottom: 3rem;">
+                    <li
+                        style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-size: 1.05rem;">
+                        <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.2rem;"></i> 10 AI
+                        Strategies Per Week
+                    </li>
+                    <li
+                        style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-size: 1.05rem;">
+                        <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.2rem;"></i>
+                        High-Converting Hooks
+                    </li>
+                    <li
+                        style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-size: 1.05rem;">
+                        <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.2rem;"></i> Cultural
+                        Intelligence Engine
+                    </li>
+                </ul>
+
+                <a href="{{ url_for('register') }}" class="primary-btn"
+                    style="width: 100%; justify-content: center; padding: 20px; font-size: 1.2rem; text-decoration: none; border-radius: 16px; box-shadow: 0 10px 20px var(--primary-glow);">
+                    Start Your Growth <i class="fa-solid fa-arrow-right" style="margin-left: 12px;"></i>
+                </a>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-container">
+                <div class="footer-grid" style="text-align: left;">
+                    <div class="footer-brand">
+                        <div class="logo" style="margin-bottom: 20px;">
+                            <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+                            <span class="logo-text">Manager AI</span>
+                        </div>
+                        <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 25px;">The global standard
+                            for AI-powered content strategy. Empowering brands with cultural intelligence.</p>
+                        <div class="footer-socials" style="display: flex; gap: 15px;">
+                            <a href="https://x.com/Raehub_tech" target="_blank" class="social-link"
+                                title="Follow us on X">
+                                <i class="fa-brands fa-x-twitter"></i>
+                            </a>
+                            <a href="https://www.instagram.com/rae__hub" target="_blank" class="social-link"
+                                title="Follow us on Instagram">
+                                <i class="fa-brands fa-instagram"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 style="color: var(--text-main); margin-bottom: 20px;">Platform</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 10px;"><a href="{{ url_for('register') }}"
+                                    style="color: var(--text-muted); text-decoration: none;">Get Started</a></li>
+                            <li style="margin-bottom: 10px;"><a href="{{ url_for('login') }}"
+                                    style="color: var(--text-muted); text-decoration: none;">Member Login</a></li>
+                            <li style="margin-bottom: 10px;"><a href="{{ url_for('pricing') }}"
+                                    style="color: var(--text-muted); text-decoration: none;">Pricing Plans</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 style="color: var(--text-main); margin-bottom: 20px;">Company</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 10px;"><a href="http://raehub.live/" target="_blank"
+                                    style="color: var(--text-muted); text-decoration: none;">RaeHub Home</a></li>
+                            <li style="margin-bottom: 10px;"><a href="http://raehub.live/#about" target="_blank"
+                                    style="color: var(--text-muted); text-decoration: none;">About Us</a></li>
+                            <li style="margin-bottom: 10px;"><a href="http://raehub.live/#contact" target="_blank"
+                                    style="color: var(--text-muted); text-decoration: none;">Contact</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 style="color: var(--text-main); margin-bottom: 20px;">Success</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
+                                Case Studies (Soon)</li>
+                            <li style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
+                                Growth Blog (Soon)</li>
+                            <li style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
+                                Support (Soon)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer-bottom"
+                    style="border-top: 1px solid var(--border-color); padding-top: 30px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                    <p style="color: var(--text-muted);">&copy; 2024 Rae Company. All rights reserved.</p>
+                    <p style="color: var(--text-muted);">Crafted with ❤️ by <a href="http://raehub.live/"
+                            target="_blank"
+                            style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Raehub</a></p>
+                </div>
+            </div>
+        </footer>
     </div>
 </body>
 

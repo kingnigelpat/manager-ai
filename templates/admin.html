@@ -143,8 +143,7 @@
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <div
-            style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; color: #34d399;">
+        <div class="flash-message flash-success">
             {% for message in messages %}
             {{ message }}
             {% endfor %}
@@ -169,22 +168,22 @@
             <tbody>
                 {% for sub in submissions %}
                 <tr>
-                    <td>{{ sub[5] }}</td>
-                    <td>{{ sub[2] }}</td>
-                    <td>{{ sub[1] }}</td>
-                    <td>{{ sub[3] }}</td>
+                    <td>{{ sub['timestamp'] }}</td>
+                    <td>{{ sub['full_name'] }}</td>
+                    <td>{{ sub['username'] }}</td>
+                    <td>{{ sub['plan_type'] }}</td>
                     <td>
-                        <a href="{{ url_for('uploaded_file', filename=sub[4]) }}" target="_blank"
-                            class="screenshot-link">
+                        <a href="{{ sub['screenshot_path'] if sub['screenshot_path'].startswith('http') else url_for('uploaded_file', filename=sub['screenshot_path']) }}"
+                            target="_blank" class="screenshot-link">
                             <i class="fa-solid fa-image"></i> View
                         </a>
                     </td>
                     <td>
-                        <a href="{{ url_for('approve_submission', submission_id=sub[0]) }}"
+                        <a href="{{ url_for('approve_submission', submission_id=sub['id']) }}"
                             class="action-btn btn-approve">
                             <i class="fa-solid fa-check"></i> Approve
                         </a>
-                        <a href="{{ url_for('reject_submission', submission_id=sub[0]) }}"
+                        <a href="{{ url_for('reject_submission', submission_id=sub['id']) }}"
                             class="action-btn btn-reject">
                             <i class="fa-solid fa-xmark"></i> Reject
                         </a>
@@ -216,11 +215,11 @@
             <tbody>
                 {% for item in history %}
                 <tr>
-                    <td>{{ item[5] }}</td>
-                    <td>{{ item[2] }}</td>
-                    <td>{{ item[1] }}</td>
-                    <td>{{ item[3] }}</td>
-                    <td><span class="status-badge status-{{ item[4] }}">{{ item[4] }}</span></td>
+                    <td>{{ item['timestamp'] }}</td>
+                    <td>{{ item['full_name'] }}</td>
+                    <td>{{ item['username'] }}</td>
+                    <td>{{ item['plan_type'] }}</td>
+                    <td><span class="status-badge status-{{ item['status'] }}">{{ item['status'] }}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -241,34 +240,71 @@
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user[0] }}</td>
-                    <td>{{ user[1] }}</td>
+                    <td>{{ user['id'] }}</td>
+                    <td>{{ user['username'] }}</td>
                     <td>
-                        {% if user[2] %}
-                        <span class="status-badge status-approved">Premium</span>
+                        {% if user['is_subscribed'] %}
+                        <span class="status-badge status-approved">{{ user['plan_type']|capitalize }}</span>
                         {% else %}
                         <span class="status-badge"
                             style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Free</span>
                         {% endif %}
                     </td>
-                    <td>{{ user[3] if user[3] else '-' }}</td>
-                    <td>
+                    <td>{{ user['subscription_start'] if user['subscription_start'] else '-' }}</td>
                     <td>
                         <div style="display: flex; gap: 5px;">
-                            {% if user[2] %}
-                            <a href="{{ url_for('terminate_plan', user_id=user[0]) }}" class="action-btn btn-reject"
+                            {% if user['is_subscribed'] %}
+                            <a href="{{ url_for('terminate_plan', user_id=user['id']) }}" class="action-btn btn-reject"
                                 style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);"
                                 onclick="return confirm('Downgrade this user to Free plan?')">
                                 <i class="fa-solid fa-level-down-alt"></i> Downgrade
                             </a>
                             {% endif %}
 
-                            <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="action-btn btn-reject"
+                            <a href="{{ url_for('delete_user', user_id=user['id']) }}" class="action-btn btn-reject"
                                 onclick="return confirm('WARNING: This will permanently delete this user and all their data. Are you sure?')">
                                 <i class="fa-solid fa-trash"></i> Delete
                             </a>
                         </div>
                     </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2 style="margin-top: 3rem; color: #fbbf24;"><i class="fa-solid fa-credit-card"></i> Preferred Payment Requests
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Users who can't pay via GTB and requested another
+            method.</p>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Plan</th>
+                    <th>Method</th>
+                    <th>Follow-up Contact</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in payment_requests %}
+                <tr>
+                    <td style="font-weight: 500;">{{ req['username'] }}</td>
+                    <td><span class="status-badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd;">{{
+                            req['plan_type']|capitalize if req['plan_type'] else 'Unknown' }}</span></td>
+                    <td style="color: var(--primary-color); font-weight: 600;">{{ req['preferred_method'] }}</td>
+                    <td>
+                        <span
+                            style="font-size: 0.75rem; color: var(--text-muted); display: block; text-transform: uppercase;">Via
+                            {{ req['contact_method'] }}</span>
+                        <strong>{{ req['contact_info'] }}</strong>
+                    </td>
+                    <td><small>{{ req['timestamp'] }}</small></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);">No payment requests yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

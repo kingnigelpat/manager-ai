@@ -33,7 +33,8 @@
                 <div class="logo">
                     <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
                     <span class="logo-text">Manager AI <small
-                            style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by Rae</small></span>
+                            style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by Rae | Global
+                            Specialist</small></span>
                 </div>
 
                 <div class="header-right">
@@ -45,10 +46,13 @@
                     </button>
 
                     {% if is_subscribed %}
-                    <div class="user-badge glow-effect" style="border-color: gold; color: gold;">
-                        <i class="fa-solid fa-crown" style="margin-right: 5px;"></i>
-                        <span>Premium</span>
-                    </div>
+                    <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
+                        <div class="user-badge glow-effect" style="border-color: gold; color: gold; cursor: pointer;">
+                            <i class="fa-solid fa-crown" style="margin-right: 5px;"></i>
+                            <span>{{ plan_type|capitalize }} Plan <i class="fa-solid fa-chevron-right"
+                                    style="font-size: 0.7em; margin-left: 5px; opacity: 0.7;"></i></span>
+                        </div>
+                    </a>
                     {% else %}
                     <div class="user-badge">
                         <span class="status-dot"></span>
@@ -93,7 +97,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="language-input">I prefer English that is...</label>
+                        <label for="language-input">Content Tone & Language Style</label>
                         <select id="language-input">
                             <option value="simple">Simple & Easy (Beginner)</option>
                             <option value="pidgin">Naija Pidgin Style</option>
@@ -101,9 +105,14 @@
                         </select>
                     </div>
 
+                    <div class="form-group">
+                        <label for="location-input">Target Market / Location (e.g. Lagos, Global, USA)</label>
+                        <input type="text" id="location-input" placeholder="Where is your audience located?">
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group half">
-                            <label for="people-input">Who is in the video?</label>
+                            <label for="people-input">Personnel / Talent</label>
                             <select id="people-input">
                                 <option value="solo">Just Me (Solo)</option>
                                 <option value="partner">Me + One Other Person</option>
@@ -112,7 +121,7 @@
                             </select>
                         </div>
                         <div class="form-group half">
-                            <label for="mood-input">It should feel...</label>
+                            <label for="mood-input">Aesthetic & Mood</label>
                             <select id="mood-input">
                                 <option value="happy">Energetic & Hype</option>
                                 <option value="serious">Professional & Clean</option>
@@ -124,7 +133,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="goal-input">Tell me what you want to achieve</label>
+                        <label for="goal-input">Campaign Objective</label>
                         <select id="goal-input">
                             <option value="get sales">Get Sales / Orders</option>
                             <option value="get followers">Get New Followers</option>
@@ -134,11 +143,33 @@
                         </select>
                     </div>
 
-                    <div class="action-area">
+                    <div class="action-area"
+                        style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
                         <button id="generate-btn" class="primary-btn">
                             <span class="btn-icon"><i class="fa-solid fa-bolt"></i></span> Generate Magic Idea
                         </button>
+
+                        {% if plan_type in ['pro', 'business'] %}
+                        <button id="weekly-plan-btn" class="secondary-btn" title="Generate 7-day content plan">
+                            <i class="fa-solid fa-calendar-week"></i> 7-Day Plan
+                        </button>
+                        {% endif %}
                     </div>
+
+                    {% if plan_type == 'business' %}
+                    <div class="brand-tone-section"
+                        style="margin-top: 25px; padding: 20px; background: rgba(239, 68, 68, 0.05); border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <label for="brand-tone-input"
+                            style="display: block; margin-bottom: 12px; font-weight: 600; font-size: 1rem; color: #ef4444;">
+                            <i class="fa-solid fa-brain"></i> Brand Tone Memory:
+                        </label>
+                        <textarea id="brand-tone-input"
+                            placeholder="Describe your brand's voice (e.g. funny, aggressive, classy, street-smart...)"
+                            style="width: 100%; min-height: 80px; margin-bottom: 10px; background: rgba(0,0,0,0.2);">{{ brand_tone }}</textarea>
+                        <button id="save-tone-btn" class="secondary-btn"
+                            style="font-size: 0.8rem; padding: 6px 12px;">Save Tone</button>
+                    </div>
+                    {% endif %}
 
                 </section>
 
@@ -163,16 +194,28 @@
                         </div>
                     </div>
 
-                    <div class="action-row">
+                    <div class="action-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button id="copy-btn" class="secondary-btn">
-                            <span class="icon"><i class="fa-solid fa-copy"></i></span> Copy to Clipboard
+                            <span class="icon"><i class="fa-solid fa-copy"></i></span> Copy Idea
                         </button>
+                        {% if plan_type in ['pro', 'business'] %}
+                        <button id="optimize-cta-btn" class="secondary-btn"
+                            style="border-color: #3b82f6; color: #3b82f6;">
+                            <i class="fa-solid fa-bullhorn"></i> Optimize CTA
+                        </button>
+                        <button id="rewrite-hook-btn" class="secondary-btn"
+                            style="border-color: #f59e0b; color: #f59e0b;">
+                            <i class="fa-solid fa-anchor"></i> Rewrite Hooks
+                        </button>
+                        {% endif %}
                     </div>
                 </section>
             </main>
         </div>
     </div>
 
+    <!-- Markdown Renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 

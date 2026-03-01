@@ -5,3 +5,5 @@ venv/
 *.db
 *.log
 serviceAccountKey.json
+uploads/
+.DS_Store

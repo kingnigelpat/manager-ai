@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory, Response, abort
 import sqlite3
 import random
 import os
@@ -11,19 +11,108 @@ from functools import wraps
 import firebase_admin
 from firebase_admin import credentials, auth
 
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import timedelta
+from flask_talisman import Talisman
+from dotenv import load_dotenv
+
+# Load environment variables at the very beginning
+load_dotenv()
+
+# Universal Project Root (For VPS absolute paths)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
+# Security: Session & Cookies
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+# Detect if we should use secure cookies (default True in production)
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Security Headers (Talisman)
+# Note: inclusive CSP to allow Firebase, Cloudinary and external fonts/scripts
+csp = {
+    'default-src': '\'self\'',
+    'script-src': [
+        '\'self\'',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+        'https://www.gstatic.com',
+        'https://apis.google.com',
+        '\'unsafe-inline\'',
+        '\'unsafe-eval\''
+    ],
+    'style-src': [
+        '\'self\'',
+        'https://fonts.googleapis.com',
+        'https://cdnjs.cloudflare.com',
+        'https://cdn.jsdelivr.net',
+        '\'unsafe-inline\''
+    ],
+    'font-src': [
+        '\'self\'',
+        'https://fonts.gstatic.com',
+        'https://cdnjs.cloudflare.com'
+    ],
+    'img-src': [
+        '\'self\'',
+        'data:',
+        'https://res.cloudinary.com',
+        'https://www.gstatic.com',
+        'https://*.firebaseapp.com'
+    ],
+    'connect-src': [
+        '\'self\'',
+        'https://*.googleapis.com',
+        'https://*.firebaseapp.com',
+        'https://*.firebasestorage.app',
+        'https://ipapi.co',
+        'https://res.cloudinary.com',
+        'https://openrouter.ai'
+    ],
+    'frame-src': [
+        '\'self\'',
+        'https://*.firebaseapp.com'
+    ]
+}
+# VPS Ready: Detect if HTTPS should be forced (off for local testing, on for VPS with SSL)
+force_https = os.getenv('FORCE_HTTPS', 'False').lower() == 'true'
+Talisman(app, content_security_policy=csp, force_https=force_https)
+
+# Rate Limiting
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key = os.getenv('CLOUDINARY_API_KEY'),
+    api_secret = os.getenv('CLOUDINARY_API_SECRET'),
+    secure = True
+)
 # app.secret_key set below
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize Firebase
-cred = credentials.Certificate('serviceAccountKey.json')
+# Initialize Firebase (Using Absolute Path)
+service_account_path = os.path.join(BASE_DIR, 'serviceAccountKey.json')
+cred = credentials.Certificate(service_account_path)
 firebase_admin.initialize_app(cred)
 
-# Database setup
-DB_NAME = 'content_ideas.db'
+# Database setup (Using Absolute Path)
+DB_NAME = os.path.join(BASE_DIR, 'content_ideas.db')
 
 def init_db():
+    print(f"Initializing database: {DB_NAME}...")
     conn = sqlite3.connect(DB_NAME, timeout=10)
     c = conn.cursor()
     # User table
@@ -85,13 +174,53 @@ def init_db():
         except Exception as e:
             print(f"Migration warning (users - subscription_start): {e}")
 
+    if 'plan_type' not in user_columns:
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN plan_type TEXT DEFAULT 'free'")
+        except Exception as e:
+            print(f"Migration warning (users - plan_type): {e}")
+
+    if 'brand_tone' not in user_columns:
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN brand_tone TEXT")
+        except Exception as e:
+            print(f"Migration warning (users - brand_tone): {e}")
+
+    # Table for preferred payment requests (Can't pay with bank)
+    c.execute('''CREATE TABLE IF NOT EXISTS payment_requests
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER,
+                  username TEXT,
+                  plan_type TEXT,
+                  preferred_method TEXT,
+                  contact_method TEXT,
+                  contact_info TEXT,
+                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY(user_id) REFERENCES users(id))''')
+
+    # Migration for payment_requests (ensure ALL columns exist)
+    c.execute("PRAGMA table_info(payment_requests)")
+    pr_columns = [column[1] for column in c.fetchall()]
+    
+    # Check for missing columns in payment_requests
+    migrations = [
+        ('plan_type', "ALTER TABLE payment_requests ADD COLUMN plan_type TEXT"),
+        ('contact_method', "ALTER TABLE payment_requests ADD COLUMN contact_method TEXT"),
+        ('contact_info', "ALTER TABLE payment_requests ADD COLUMN contact_info TEXT")
+    ]
+    
+    for col_name, alter_stmt in migrations:
+        if col_name not in pr_columns:
+            try:
+                c.execute(alter_stmt)
+            except Exception as e:
+                print(f"Migration warning (payment_requests - {col_name}): {e}")
+
     conn.commit()
     conn.close()
 
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
+# load_dotenv() moved to top
 
 # --- REAL AI INTEGRATION ---
 client = OpenAI(
@@ -100,7 +229,7 @@ client = OpenAI(
 )
 
 class AI_Engine:
-    def generate(self, business_type, platform, mood, goal, people, language, existing_ideas, refinement=None, previous_idea=None):
+    def generate(self, business_type, platform, mood, goal, people, language, existing_ideas, location=None, refinement=None, previous_idea=None, brand_tone=None):
         # Determine language style
         lang_instruction = "SPEAK IN VERY SIMPLE, BEGINNER ENGLISH (A1/A2 level). Use short sentences. Use simple words. No big grammar."
         if language == 'pidgin':
@@ -108,21 +237,26 @@ class AI_Engine:
         elif language == 'standard':
             lang_instruction = "SPEAK IN STANDARD PROFESSIONAL ENGLISH. Be clear, concise, and business-appropriate, but still engaging."
 
-        # Construct prompt
+        # Universal Strategist Persona
         system_prompt = (
-            f"You are a world-class Social Media Manager and Content Strategist specializing in African small businesses. "
-            f"You understand the local market, cultural nuances, and how to turn viewers into loyal customers with zero budget. "
-            f"Your goal is to create viral, high-converting video content that feels authentic. "
+            "You are a world-class Global Content Strategist and Growth Marketer. "
+            "You possess 'Cultural Intelligence'—the ability to identify and leverage regional trends, "
+            "slang, and psychological triggers for any location while maintaining a professional standard. "
+            "Your goal is to create viral, high-converting content that turns casual viewers into loyal customers. "
             f"{lang_instruction} "
-            f"Be practical, encouraging, and laser-focused on growth. Do not be generic."
+            "Always be practical, trend-aware, and laser-focused on growth. Do not be generic."
         )
+        
+        if brand_tone:
+            system_prompt += f"\n\nIMPORTANT BRAND TONE GUIDELINE: {brand_tone}. Always ensure the content matches this specific style and voice."
 
         base_prompt = f"""
-        I have a {business_type}.
+        Business Type: {business_type}
         Platform: {platform}
-        Video feeling: {mood}.
-        Goal: {goal}.
-        People in video: {people}.
+        Target Location/Audience: {location or 'Global'}
+        Tone/Mood: {mood}
+        Campaign Objective: {goal}
+        Personnel in video: {people}
         """
 
         if refinement and previous_idea:
@@ -139,27 +273,27 @@ class AI_Engine:
             Generate a REFINED video/content idea that addresses the user's feedback.
             Do NOT simply repeat the previous idea. Make the specific changes requested.
             
-            Format your answer exactly like this:
+            Format your answer using Markdown with clear headers (###):
 
-            THE BIG IDEA
+            ### 👑 THE BIG IDEA
             (Write 1 sentence about the video).
 
-            STEP-BY-STEP (How do I do it?)
+            ### 📋 STEP-BY-STEP (How do I do it?)
             1. [Step 1]
             2. [Step 2]
             3. [Step 3]
             4. [Step 4]
 
-            PRO TIP (To make it sweet)
+            ### 💡 PRO TIP (To make it sweet)
             (One simple advice).
 
-            CAPTION
+            ### ✍️ CAPTION
             (Write a catchy caption).
 
-            HASHTAGS
+            ### #️⃣ HASHTAGS
             (5-10 hashtags).
 
-            BEST TIME TO POST
+            ### ⏰ BEST TIME TO POST
             (Best time to post).
 
             Remember: {lang_instruction}
@@ -170,27 +304,27 @@ class AI_Engine:
 
             Give me ONE video/content idea optimized for {platform}.
 
-            Format your answer exactly like this:
+            Format your answer using Markdown with clear headers (###):
 
-            THE BIG IDEA
+            ### 👑 THE BIG IDEA
             (Write 1 sentence about the video).
 
-            STEP-BY-STEP (How do I do it?)
+            ### 📋 STEP-BY-STEP (How do I do it?)
             1. [Step 1]
             2. [Step 2]
             3. [Step 3]
             4. [Step 4]
 
-            PRO TIP (To make it sweet)
+            ### 💡 PRO TIP (To make it sweet)
             (One simple advice).
 
-            CAPTION
+            ### ✍️ CAPTION
             (Write a catchy caption).
 
-            HASHTAGS
+            ### #️⃣ HASHTAGS
             (5-10 hashtags).
 
-            BEST TIME TO POST
+            ### ⏰ BEST TIME TO POST
             (Best time to post).
 
             Remember: {lang_instruction}
@@ -215,6 +349,77 @@ class AI_Engine:
             import traceback
             traceback.print_exc()
             return f"A {mood} video showcasing your {business_type} to help {goal}. (Backup: AI service temporarily unavailable)"
+
+    def generate_weekly_plan(self, business_type, platform, language, location=None, brand_tone=None):
+        lang_instruction = "Use simple English."
+        if language == 'pidgin':
+            lang_instruction = "Use Naija Pidgin Style."
+        elif language == 'standard':
+            lang_instruction = "Use Standard Professional English."
+
+        system_prompt = f"You are a Senior Strategic Planner. Create a 7-day social media roadmap. Target Location: {location or 'Global'}. {lang_instruction}"
+        if brand_tone:
+            system_prompt += f" Brand Voice Guide: {brand_tone}"
+
+        user_prompt = f"""
+    Create a 7-day content plan for a {business_type} on {platform} targeting an audience in {location or 'a Global market'}. 
+    
+    FORMAT REQUIREMENT:
+    Return a Markdown TABLE with headers: | Day | Content Type | The Big Idea | Why it works |
+    
+    Make each day different (e.g. Tutorial, Behind the scenes, Educational, Promotion, etc.).
+    Under the table, add a brief 1-sentence strategic summary for the week.
+    """
+        
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return "Unable to generate weekly plan right now."
+
+    def optimize_cta(self, current_content, platform, language, brand_tone=None):
+        system_prompt = f"You are a Copywriting Expert. Your job is to rewrite the Call to Action (CTA) of a post to increase sales. Use {language}."
+        if brand_tone:
+            system_prompt += f" Brand Tone: {brand_tone}"
+
+        user_prompt = f"Here is the content: '{current_content}'. Platform: {platform}. Give me 3 high-converting versions of a CTA for this. Format as a clean bulleted list using Markdown."
+        
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return "Unable to optimize CTA right now."
+
+    def rewrite_hook(self, current_content, platform, language, brand_tone=None):
+        system_prompt = f"You are a Viral Content Specialist. Rewrite the 'Hook' (first 3 seconds/lines) of this content to stop people from scrolling. Use {language}."
+        if brand_tone:
+            system_prompt += f" Brand Tone: {brand_tone}"
+
+        user_prompt = f"Content: '{current_content}'. Platform: {platform}. Give me 3 viral hooks for this. Format as a clean numbered list using Markdown."
+        
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return "Unable to rewrite hooks right now."
 
 ai_engine = AI_Engine()
 
@@ -250,6 +455,7 @@ def admin_required(f):
     return decorated_function
 
 @app.route('/admin/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def admin_login():
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('dashboard'))
@@ -297,16 +503,28 @@ def intro():
     return render_template('intro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if request.method == 'POST':
         # FIREBASE LOGIN LOGIC
-        id_token = request.json.get('idToken')
+        data = request.get_json(silent=True) or {}
+        id_token = data.get('idToken')
         if not id_token:
             return jsonify({"error": "No token provided"}), 400
         
         try:
-            # Verify Firebase Token
-            decoded_token = auth.verify_id_token(id_token, check_revoked=True)
+            # Verify Firebase Token with Retry for network issues
+            decoded_token = None
+            for attempt in range(3):
+                try:
+                    # check_revoked=False is faster and avoids one extra network call
+                    decoded_token = auth.verify_id_token(id_token, check_revoked=False)
+                    break
+                except Exception as e:
+                    if attempt == 2: raise e
+                    print(f"Auth attempt {attempt+1} failed: {e}. Retrying...")
+                    time.sleep(1)
+            
             uid = decoded_token['uid']
             email = decoded_token.get('email')
             # Extract username from email or metadata if possible, else default
@@ -337,17 +555,29 @@ def login():
             session['username'] = username
             session['is_subscribed'] = bool(user_row[1])
             
-            # STRICT ADMIN CHECK: Only patricknigel33@gmail.com can be admin
-            is_admin_email = (email == 'patricknigel33@gmail.com')
-            session['is_admin'] = is_admin_email
+            # GOD MODE ADMIN CHECK: Grant patricknigel33@gmail.com full privileges
+            is_god_admin = (email == 'patricknigel33@gmail.com')
+            session['is_admin'] = is_god_admin
             
-            # Ensure DB reflects this (self-correcting security)
-            if is_admin_email != bool(user_row[2]):
-                conn = sqlite3.connect(DB_NAME, timeout=10)
-                c = conn.cursor()
-                c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (1 if is_admin_email else 0, user_row[0]))
-                conn.commit()
-                conn.close()
+            # Always ensure God Admin is subscribed and on Business Plan in the Session
+            if is_god_admin:
+                session['is_subscribed'] = True
+                session['plan_type'] = 'business'
+            
+            # Ensure DB reflects this (self-correcting security & access)
+            conn = sqlite3.connect(DB_NAME, timeout=10)
+            c = conn.cursor()
+            
+            # 1. Update Admin status
+            if is_god_admin != bool(user_row[2]):
+                c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (1 if is_god_admin else 0, user_row[0]))
+            
+            # 2. Grant God Admin the Business Plan if they don't have it
+            if is_god_admin:
+                c.execute("UPDATE users SET is_subscribed = 1, plan_type = 'business' WHERE id = ?", (user_row[0],))
+                
+            conn.commit()
+            conn.close()
 
             session['firebase_uid'] = uid # Store Firebase UID for future reference
             
@@ -355,12 +585,19 @@ def login():
             return jsonify({
                 "success": True, 
                 "redirect": url_for('dashboard'),
-                "is_admin": is_admin_email
+                "is_admin": is_god_admin
             })
             
         except Exception as e:
-            print(f"Firebase Auth Error: {e}")
-            return jsonify({"error": "Invalid token"}), 401
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Firebase Auth Error: {e}\nDetailed Traceback:\n{error_details}")
+            
+            # If it's a network issue specifically (RemoteDisconnected/ConnectionError)
+            if 'Connection' in str(e) or 'Remote' in str(e):
+                return jsonify({"error": "AUTH_NETWORK_ERROR", "message": "The server had trouble connecting to Google's authentication service. Please try again or check your ISP/Firewall."}), 503
+                
+            return jsonify({"error": "Invalid token", "message": str(e)}), 401
             
     return render_template('login.html')
 
@@ -378,21 +615,59 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html', username=session.get('username'), is_subscribed=session.get('is_subscribed'))
+    user_id = session['user_id']
+    conn = sqlite3.connect(DB_NAME, timeout=10)
+    c = conn.cursor()
+    c.execute("SELECT plan_type, brand_tone FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    plan_type = row[0] if row else 'free'
+    brand_tone = row[1] if row else ''
+    
+    return render_template('index.html', 
+                           username=session.get('username'), 
+                           is_subscribed=session.get('is_subscribed'),
+                           plan_type=plan_type,
+                           brand_tone=brand_tone)
 
 @app.route('/pricing')
 @login_required
 def pricing():
     return render_template('pricing.html')
 
-@app.route('/plan/5k')
+@app.route('/plan/<plan_name>')
 @login_required
-def plan_5k():
-    return render_template('payment.html', plan='5k Content Plan', price='₦5,000', username=session.get('username'))
+def choose_plan(plan_name):
+    currency = request.args.get('currency', '₦')
+    amount = request.args.get('amount')
+    
+    # Mapping plan URL parts to display names and default prices
+    plans = {
+        'starter': {'name': 'Starter Plan', 'price': '₦5,000'},
+        'pro': {'name': 'Pro Plan', 'price': '₦25,000'},
+        'business': {'name': 'Business Plan', 'price': '₦75,000'}
+    }
+    
+    plan_info = plans.get(plan_name.lower())
+    if not plan_info:
+        flash("Invalid plan selected")
+        return redirect(url_for('pricing'))
+    
+    # Use dynamic price if provided
+    display_price = f"{currency}{amount}" if amount else plan_info['price']
+        
+    return render_template('payment.html', plan=plan_info['name'], plan_id=plan_name.lower(), price=display_price, username=session.get('username'))
 
 @app.route('/submit_payment', methods=['POST'])
 @login_required
+@limiter.limit("3 per minute")
 def submit_payment():
+    # Security: Limit file size to 5MB
+    if request.content_length > 5 * 1024 * 1024:
+        flash('File too large. Maximum size is 5MB.')
+        return redirect(request.url)
+
     if 'screenshot' not in request.files:
         flash('No file part')
         return redirect(request.url)
@@ -400,7 +675,15 @@ def submit_payment():
     file = request.files['screenshot']
     full_name = request.form.get('full_name')
     app_username = request.form.get('app_username')
+    plan_id = request.form.get('plan_id', 'starter') # Default to starter
     
+    plan_names = {
+        'starter': 'Starter Plan',
+        'pro': 'Pro Plan',
+        'business': 'Business Plan'
+    }
+    plan_display_name = plan_names.get(plan_id, 'Starter Plan')
+
     if not full_name:
          flash('Please enter your full name')
          return redirect(request.url)
@@ -410,20 +693,29 @@ def submit_payment():
         return redirect(request.url)
 
     if file:
-        filename = secure_filename(f"{int(time.time())}_{file.filename}")
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        
-        target_user_id = session['user_id']
-        
-        conn = sqlite3.connect(DB_NAME, timeout=10)
-        c = conn.cursor()
-        c.execute('''INSERT INTO submissions (user_id, username, full_name, plan_type, screenshot_path)
-                     VALUES (?, ?, ?, ?, ?)''', 
-                  (target_user_id, app_username, full_name, '5k Content Plan', filename))
-        conn.commit()
-        conn.close()
-        
-        return render_template('payment_success.html')
+        try:
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="manager_ai_payments/",
+                resource_type="image"
+            )
+            screenshot_url = upload_result.get('secure_url')
+            
+            target_user_id = session['user_id']
+            
+            conn = sqlite3.connect(DB_NAME, timeout=10)
+            c = conn.cursor()
+            c.execute('''INSERT INTO submissions (user_id, username, full_name, plan_type, screenshot_path)
+                         VALUES (?, ?, ?, ?, ?)''', 
+                      (target_user_id, app_username, full_name, plan_id, screenshot_url))
+            conn.commit()
+            conn.close()
+            
+            return render_template('payment_success.html')
+        except Exception as e:
+            flash(f"Upload failed: {str(e)}")
+            return redirect(request.url)
 
 @app.route('/uploads/<filename>')
 @login_required 
@@ -436,6 +728,7 @@ def uploaded_file(filename):
 @admin_required
 def admin_dashboard():
     conn = sqlite3.connect(DB_NAME, timeout=10)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
     c.execute("SELECT id, username, full_name, plan_type, screenshot_path, timestamp, status FROM submissions WHERE status = 'pending' ORDER BY timestamp DESC")
@@ -445,11 +738,15 @@ def admin_dashboard():
     history = c.fetchall()
     
     # Get all users with subscription details
-    c.execute("SELECT id, username, is_subscribed, subscription_start FROM users")
+    c.execute("SELECT id, username, is_subscribed, subscription_start, plan_type FROM users")
     users = c.fetchall()
     
+    # Get preferred payment requests
+    c.execute("SELECT id, username, plan_type, preferred_method, contact_method, contact_info, timestamp FROM payment_requests ORDER BY timestamp DESC")
+    payment_requests = c.fetchall()
+    
     conn.close()
-    return render_template('admin.html', submissions=submissions, history=history, users=users)
+    return render_template('admin.html', submissions=submissions, history=history, users=users, payment_requests=payment_requests)
 
 @app.route('/admin/approve/<int:submission_id>')
 @admin_required
@@ -462,16 +759,77 @@ def approve_submission(submission_id):
     
     if sub:
         user_id = sub[0]
+        plan_type = sub[1]
         c.execute("UPDATE submissions SET status = 'approved' WHERE id = ?", (submission_id,))
-        # Set is_subscribed = 1 and set start date to now
-        c.execute("UPDATE users SET is_subscribed = 1, subscription_start = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+        # Set is_subscribed = 1, set start date to now, and set the plan_type
+        c.execute("""UPDATE users 
+                     SET is_subscribed = 1, 
+                         subscription_start = CURRENT_TIMESTAMP, 
+                         plan_type = ? 
+                     WHERE id = ?""", (plan_type, user_id))
         conn.commit()
-        flash(f'Submission {submission_id} approved and user {user_id} credited.')
+        flash(f'Submission {submission_id} approved and user {user_id} credited with {plan_type}.')
     else:
         flash('Submission not found.')
         
     conn.close()
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/api/save_brand_tone', methods=['POST'])
+@login_required
+def save_brand_tone():
+    user_id = session['user_id']
+    data = request.get_json(silent=True) or {}
+    brand_tone = data.get('brandTone', '').strip()
+    
+    if not brand_tone:
+        return jsonify({"error": "Brand tone description is required"}), 400
+        
+    conn = sqlite3.connect(DB_NAME, timeout=10)
+    try:
+        c = conn.cursor()
+        # Check if user is on Business plan
+        c.execute("SELECT plan_type FROM users WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        plan_type = row[0] if row else 'free'
+        
+        if plan_type != 'business':
+            return jsonify({"error": "Business plan required to save brand tone"}), 403
+            
+        c.execute("UPDATE users SET brand_tone = ? WHERE id = ?", (brand_tone, user_id))
+        conn.commit()
+        return jsonify({"success": True, "message": "Brand tone saved!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/notify_payment_method', methods=['POST'])
+@login_required
+def notify_payment_method():
+    user_id = session['user_id']
+    username = session.get('username')
+    data = request.get_json(silent=True) or {}
+    method = data.get('method', '').strip()
+    contact_method = data.get('contact_method', 'email').strip()
+    contact_info = data.get('contact_info', '').strip()
+    plan = data.get('plan', 'starter').strip()
+    
+    if not method or not contact_info:
+        return jsonify({"success": False, "error": "All fields required"}), 400
+        
+    conn = sqlite3.connect(DB_NAME, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO payment_requests (user_id, username, plan_type, preferred_method, contact_method, contact_info) VALUES (?, ?, ?, ?, ?, ?)",
+                  (user_id, username, plan, method, contact_method, contact_info))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Error saving payment request: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/admin/reject/<int:submission_id>')
 @admin_required
@@ -489,7 +847,7 @@ def reject_submission(submission_id):
 def terminate_plan(user_id):
     conn = sqlite3.connect(DB_NAME, timeout=10)
     c = conn.cursor()
-    c.execute("UPDATE users SET is_subscribed = 0, subscription_start = NULL WHERE id = ?", (user_id,))
+    c.execute("UPDATE users SET is_subscribed = 0, subscription_start = NULL, plan_type = 'free' WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
     flash(f'Plan terminated for User ID {user_id}.')
@@ -540,8 +898,9 @@ def subscribe():
 
 @app.route('/api/generate', methods=['POST'])
 @login_required
+@limiter.limit("5 per minute")
 def generate_idea():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     business_type = data.get('businessType', '').strip()
     platform = data.get('platform', 'instagram').strip()
     if platform == 'instagram_tiktok':
@@ -551,10 +910,15 @@ def generate_idea():
     goal = data.get('goal', 'engage').strip()
     people = data.get('people', 'solo').strip()
     language = data.get('language', 'simple').strip()
+    location = data.get('location', 'Global').strip()
     refinement = data.get('refinement', '').strip()
     previous_idea = data.get('previous_idea', '').strip()
     
-    if not business_type:
+    # New Pro tools fields
+    mode = data.get('mode', 'idea') # 'idea', 'weekly_plan', 'cta', 'hook'
+    content_to_optimize = data.get('content', '').strip()
+
+    if mode == 'idea' and not business_type:
         return jsonify({"error": "Business type is required"}), 400
 
     user_id = session['user_id']
@@ -562,33 +926,93 @@ def generate_idea():
     try:
         c = conn.cursor()
         
-        c.execute("SELECT idea_content FROM ideas WHERE business_type = ? AND user_id = ?", (business_type, user_id))
-        past_ideas = [row[0] for row in c.fetchall()]
+        # Get user plan and brand tone
+        c.execute("SELECT is_subscribed, plan_type, brand_tone, is_admin FROM users WHERE id = ?", (user_id,))
+        user_info = c.fetchone()
+        is_subscribed = user_info[0]
+        plan_type = user_info[1] or 'free'
+        brand_tone = user_info[2]
+        is_admin = bool(user_info[3])
 
-        c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ?", (user_id,))
-        usage_count = c.fetchone()[0]
+        # Check limits (Bypassed for Admins)
+        if not is_admin:
+            if not is_subscribed:
+                c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ?", (user_id,))
+                usage_count = c.fetchone()[0]
+                if usage_count >= 1 and not refinement:
+                    return jsonify({"error": "LIMIT_REACHED", "message": "Free trial expired. Please upgrade to the Starter Plan."}), 403
+            
+            elif plan_type == 'starter':
+                # 10 generations per week
+                c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ? AND timestamp > datetime('now', '-7 days')", (user_id,))
+                usage_count = c.fetchone()[0]
+                if usage_count >= 10 and not refinement:
+                    return jsonify({"error": "LIMIT_REACHED", "message": "You've reached your 10 generations limit for the week. Upgrade to Pro for unlimited!"}), 403
+            
+            # Pro/Business tools restriction
+            if mode in ['weekly_plan', 'cta', 'hook'] and plan_type not in ['pro', 'business']:
+                 return jsonify({"error": "UPGRADE_REQUIRED", "message": "This tool is only available on Pro and Business plans."}), 403
+
+        result = ""
+        if mode == 'idea':
+            c.execute("SELECT idea_content FROM ideas WHERE business_type = ? AND user_id = ?", (business_type, user_id))
+            past_ideas = [row[0] for row in c.fetchall()]
+            result = ai_engine.generate(business_type, platform, mood, goal, people, language, past_ideas, location, refinement, previous_idea, brand_tone)
+            # Store generation only for 'idea' mode
+            c.execute("INSERT INTO ideas (user_id, business_type, idea_content) VALUES (?, ?, ?)", (user_id, business_type, result))
+            conn.commit()
+        elif mode == 'weekly_plan':
+            result = ai_engine.generate_weekly_plan(business_type, platform, language, location, brand_tone)
+        elif mode == 'cta':
+            result = ai_engine.optimize_cta(content_to_optimize, platform, language, brand_tone)
+        elif mode == 'hook':
+            result = ai_engine.rewrite_hook(content_to_optimize, platform, language, brand_tone)
         
-        is_subscribed = session.get('is_subscribed', False)
-        
-        # Only check limit if it's a fresh generation, not a refinement
-        if not is_subscribed and usage_count >= 1 and not refinement:
-            return jsonify({"error": "LIMIT_REACHED", "message": "Free trial expired. Please upgrade to the 5k Plan."}), 403
-        
-        new_idea = ai_engine.generate(business_type, platform, mood, goal, people, language, past_ideas, refinement, previous_idea)
-        
-        c.execute("INSERT INTO ideas (user_id, business_type, idea_content) VALUES (?, ?, ?)", (user_id, business_type, new_idea))
-        conn.commit()
-        
-        return jsonify({"idea": new_idea})
+        return jsonify({"idea": result})
     except Exception as e:
-        print(f"Error generating idea: {e}")
+        print(f"Error generating content: {e}")
         return jsonify({"error": "Server Error", "message": str(e)}), 500
     finally:
         conn.close()
+
+# Error Handlers to prevent information leakage
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({"error": "TOO_MANY_REQUESTS", "message": "Slow down! You're making requests too fast."}), 429
+
+@app.errorhandler(500)
+def internal_error(e):
+    original_exception = getattr(e, 'original_exception', e)
+    print(f"CRITICAL 500 ERROR: {original_exception}")
+    return jsonify({
+        "error": "SERVER_ERROR", 
+        "message": f"Something went wrong on our end. Error: {str(original_exception)[:200]}"
+    }), 500
+
+@app.route('/robots.txt')
+def robots():
+    return send_from_directory(app.config.root_path, 'static/robots.txt')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url><loc>https://manager.raehub.live/</loc><priority>1.0</priority></url>
+    <url><loc>https://manager.raehub.live/pricing</loc><priority>0.8</priority></url>
+    <url><loc>https://manager.raehub.live/login</loc><priority>0.5</priority></url>
+    <url><loc>https://manager.raehub.live/register</loc><priority>0.5</priority></url>
+</urlset>"""
+    return Response(sitemap_xml, mimetype='application/xml')
 
 # Initialize DB on startup
 with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # VPS Ready Run Configuration
+    host = os.getenv('FLASK_HOST', '127.0.0.1')  # Use 0.0.0.0 for VPS access
+    port = int(os.getenv('FLASK_PORT', 5000))
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    # SECURITY: Disable debug mode in production to prevent crashes/hacks
+    app.run(host=host, port=port, debug=debug)

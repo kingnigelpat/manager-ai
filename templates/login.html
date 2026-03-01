@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Manager AI by Rae</title>
+    <title>Login | Manager AI</title>
+    <meta name="description" content="Log in to your Manager AI account to manage your social media strategy.">
+    <link rel="canonical" href="https://manager.raehub.live/login">
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
 
@@ -32,8 +34,8 @@
         {% if messages %}
         {% for message in messages %}
         <div
-            style="background-color: {{ 'rgba(16, 185, 129, 0.1)' if 'successful' in message else 'rgba(239, 68, 68, 0.1)' }}; color: {{ '#34d399' if 'successful' in message else '#f87171' }}; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid {{ 'rgba(16, 185, 129, 0.2)' if 'successful' in message else 'rgba(239, 68, 68, 0.2)' }};">
-            <p style="margin: 0; font-size: 0.9rem;">{{ message }}</p>
+            class="flash-message {{ 'flash-success' if 'successful' in message or 'check' in message.lower() else 'flash-error' }}">
+            <p style="margin: 0;">{{ message }}</p>
         </div>
         {% endfor %}
         {% endif %}
@@ -140,6 +142,8 @@
                     } else if (error.code === 'auth/wrong-password') {
                         msg = "Incorrect password.";
                         document.getElementById('forgot-password-section').style.display = 'block';
+                    } else if (error.code === 'auth/network-request-failed') {
+                        msg = "Network Error: Failed to connect to authentication server. Check your internet or disable VPN/Ad-blockers.";
                     } else if (error.code === 'auth/too-many-requests') {
                         msg = "Too many failed attempts. Please try again later.";
                     }
@@ -164,6 +168,8 @@
                 } catch (error) {
                     if (error.code === 'auth/user-not-found') {
                         Swal.fire({ icon: 'error', title: 'User Not Found', text: 'There is no account registered with this email.' });
+                    } else if (error.code === 'auth/network-request-failed') {
+                        Swal.fire({ icon: 'error', title: 'Network Error', text: "Failed to connect to authentication server. Check your internet or disable VPN/Ad-blockers." });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: error.message });
                     }
