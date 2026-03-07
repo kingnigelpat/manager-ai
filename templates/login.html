@@ -78,8 +78,50 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
+            // Automatic Login Check
+            firebase.auth().onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log("Found Firebase User, attempting auto-login...");
+                    const loginForm = document.getElementById('login-form');
+                    const errorMsg = document.getElementById('error-message');
+                    const heroTitle = document.querySelector('.hero-text h2');
+                    const heroText = document.querySelector('.hero-text p');
+
+                    // If we're already trying to log in (form submitted), don't interrupt
+                    if (window.isLoggingIn) return;
+
+                    try {
+                        // Change UI to loading state
+                        loginForm.style.display = 'none';
+                        heroTitle.innerText = "Resuming Session...";
+                        heroText.innerText = "Welcome back! Please wait a moment.";
+
+                        const idToken = await user.getIdToken();
+                        const response = await fetch('/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken: idToken })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            window.location.href = data.redirect;
+                        } else {
+                            // If backend login fails, show form again
+                            loginForm.style.display = 'block';
+                            heroTitle.innerText = "Welcome Back";
+                            heroText.innerText = "Login to access your dashboard";
+                        }
+                    } catch (err) {
+                        console.error("Auto-login failed:", err);
+                        loginForm.style.display = 'block';
+                    }
+                }
+            });
+
             document.getElementById('login-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                window.isLoggingIn = true;
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
                 const errorMsg = document.getElementById('error-message');
@@ -129,6 +171,7 @@
                         throw new Error(data.error || "Login failed on server");
                     }
                 } catch (error) {
+                    window.isLoggingIn = false;
                     console.error(error);
                     let msg = error.message;
 

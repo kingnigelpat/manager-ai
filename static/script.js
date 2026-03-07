@@ -1,14 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Elements
+    // Main Elements
     const businessInput = document.getElementById('business-input');
     const platformInput = document.getElementById('platform-input');
     const moodInput = document.getElementById('mood-input');
     const goalInput = document.getElementById('goal-input');
     const peopleInput = document.getElementById('people-input');
     const languageInput = document.getElementById('language-input');
+    const locationInput = document.getElementById('location-input');
     const generateBtn = document.getElementById('generate-btn');
 
+    // Sidebar Elements
+    const sidebar = document.getElementById('sidebar');
+    const menuToggleBtn = document.getElementById('menu-toggle-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const contentOverlay = document.getElementById('content-overlay');
+    const historyList = document.getElementById('history-list');
+
+    // Display Area
     const resultSection = document.getElementById('result-section');
     const ideaText = document.getElementById('idea-text');
     const copyBtn = document.getElementById('copy-btn');
@@ -17,33 +26,134 @@ document.addEventListener('DOMContentLoaded', () => {
     const refineInput = document.getElementById('refine-input');
     const refineBtn = document.getElementById('refine-btn');
 
-    let currentRawIdea = ""; // Store the raw markdown for context
+    let currentRawIdea = "";
+
+    // Sidebar Functions
+    const toggleSidebar = () => {
+        sidebar.classList.toggle('open');
+        contentOverlay.classList.toggle('active');
+    };
+
+    if (menuToggleBtn) menuToggleBtn.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
+    if (contentOverlay) contentOverlay.addEventListener('click', toggleSidebar);
+
+    // History Logic
+    const loadHistory = () => {
+        fetch('/api/history')
+            .then(res => res.json())
+            .then(data => {
+                if (data.history) {
+                    historyList.innerHTML = '';
+                    if (data.history.length === 0) {
+                        historyList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No history yet.</div>';
+                        return;
+                    }
+                    data.history.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.id = `hist-${item.id}`;
+                        div.innerHTML = `
+                            <div class="h-info">
+                                <span class="h-biz">${item.business}</span>
+                                <span class="h-time">${item.time}</span>
+                            </div>
+                            <button class="h-delete" title="Delete Idea">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        `;
+
+                        div.addEventListener('click', () => {
+                            displayResult({ idea: item.content });
+                            if (window.innerWidth <= 900) toggleSidebar();
+                        });
+
+                        const delBtn = div.querySelector('.h-delete');
+                        delBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            deleteHistoryItem(item.id, div.id);
+                        });
+
+                        historyList.appendChild(div);
+                    });
+                } else if (data.error === "FIREBASE_DISABLED") {
+                    historyList.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.75rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i><br>
+                        Firebase History is not enabled.<br>
+                        <a href="https://console.firebase.google.com" target="_blank" style="color: inherit; text-decoration: underline;">Enable Firestore</a>
+                    </div>`;
+                }
+            });
+    };
+
+    // History Delete Function
+    const deleteHistoryItem = (id, elementId) => {
+        Swal.fire({
+            title: 'Delete this idea?',
+            text: "This will remove it from your history forever.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+            background: 'var(--card-bg)',
+            color: 'var(--text-main)'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const el = document.getElementById(elementId);
+                if (el) el.style.opacity = '0.3';
+
+                fetch(`/api/history/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(async res => {
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            if (el) el.remove();
+                            // If sidebar is empty after delete
+                            if (historyList.children.length === 0) {
+                                historyList.innerHTML = '<div class="history-empty">No history yet. Start generating!</div>';
+                            }
+                        } else {
+                            throw new Error(data.message || data.error || 'Failed to delete');
+                        }
+                    })
+                    .catch(err => {
+                        if (el) el.style.opacity = '1';
+                        console.error('Delete error:', err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Delete Failed',
+                            text: err.message || 'Check your internet connection and try again.',
+                            background: 'var(--card-bg)',
+                            color: 'var(--text-main)'
+                        });
+                    });
+            }
+        });
+    };
+
+    // Make it globally accessible if needed (for potential inline calls)
+    window.deleteHistoryItem = deleteHistoryItem;
 
     // Theme Toggle
     const themeBtn = document.getElementById('theme-btn');
-
-    // Function to set theme
     const setTheme = (theme) => {
         if (theme === 'light') {
             document.body.setAttribute('data-theme', 'light');
             if (themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
             localStorage.setItem('theme', 'light');
         } else {
-            document.body.removeAttribute('data-theme'); // Default is dark
+            document.body.removeAttribute('data-theme');
             if (themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
             localStorage.setItem('theme', 'dark');
         }
     };
 
-    // Check local storage or system preference
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        setTheme(savedTheme);
-    } else {
-        // Check system preference
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(systemPrefersDark ? 'dark' : 'light');
-    }
+    if (savedTheme) { setTheme(savedTheme); }
+    else { setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
 
     if (themeBtn) {
         themeBtn.addEventListener('click', () => {
@@ -55,28 +165,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper to process and display result
     const displayResult = (data) => {
         const rawText = data.idea;
-        currentRawIdea = rawText; // Update context for refinement/copy
+        currentRawIdea = rawText;
 
-        // Configure marked for safe and clean rendering
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            headerIds: false
-        });
+        marked.setOptions({ breaks: true, gfm: true, headerIds: false });
+        const htmlContent = DOMPurify.sanitize(marked.parse(rawText));
 
-        // Render Markdown to HTML
-        const htmlContent = marked.parse(rawText);
-
-        // Construct the result container
-        ideaText.innerHTML = `
-            <div class="result-markdown-body">
-                ${htmlContent}
-            </div>
-        `;
-
+        ideaText.innerHTML = `<div class="result-markdown-body">${htmlContent}</div>`;
         resultSection.classList.remove('hidden');
 
-        // Scroll to results seamlessly
         setTimeout(() => {
             const topOffset = resultSection.getBoundingClientRect().top + window.pageYOffset - 100;
             window.scrollTo({ top: topOffset, behavior: 'smooth' });
@@ -90,9 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveToneBtn = document.getElementById('save-tone-btn');
     const brandToneInput = document.getElementById('brand-tone-input');
 
-    const locationInput = document.getElementById('location-input');
-
-    // Helper to call API for different modes
+    // Helper to call API
     const callAI = (mode, payload = {}) => {
         const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.classList.remove('hidden');
@@ -155,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             generateBtn.disabled = true;
             callAI('idea').then(data => {
                 displayResult(data);
+                loadHistory(); // Refresh history
                 generateBtn.disabled = false;
             }).catch(() => { generateBtn.disabled = false; });
         });
@@ -164,23 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (weeklyPlanBtn) {
         weeklyPlanBtn.addEventListener('click', () => {
             if (!businessInput.value.trim()) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Missing Info',
-                    text: 'Please tell us about your business first!',
-                    background: 'var(--card-bg)',
-                    color: 'var(--text-main)'
-                });
+                Swal.fire({ icon: 'warning', title: 'Missing Info', text: 'Please tell us about your business first!' });
                 return;
             }
             callAI('weekly_plan').then(data => {
                 const rawPlan = data.idea;
-                // Configure marked for safe and clean rendering
-                marked.setOptions({
-                    breaks: true,
-                    gfm: true,
-                    headerIds: false
-                });
+                marked.setOptions({ breaks: true, gfm: true, headerIds: false });
                 const htmlPlan = marked.parse(rawPlan);
 
                 Swal.fire({
@@ -190,7 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${htmlPlan}
                         </div>
                         <div style="background: rgba(99, 102, 241, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary-color);">
-                            <p style="font-size: 0.85rem; margin-bottom: 12px; color: var(--text-muted);">Please copy your plan below. It will not be saved on this page.</p>
                             <button id="modal-copy-btn" class="primary-btn" style="width: 100%; padding: 14px; font-size: 1rem;">
                                 <i class="fa-solid fa-copy" style="margin-right: 8px;"></i> Copy Full Strategy
                             </button>
@@ -206,20 +289,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (copyBtn) {
                             copyBtn.addEventListener('click', () => {
                                 navigator.clipboard.writeText(rawPlan).then(() => {
-                                    const originalHTML = copyBtn.innerHTML;
                                     copyBtn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 8px;"></i> Strategy Copied!';
-                                    copyBtn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-                                    setTimeout(() => {
-                                        copyBtn.innerHTML = originalHTML;
-                                        copyBtn.style.background = '';
-                                    }, 3000);
+                                    setTimeout(() => { copyBtn.innerHTML = '<i class="fa-solid fa-copy" style="margin-right: 8px;"></i> Copy Full Strategy'; }, 3000);
                                 });
                             });
                         }
                     }
                 });
-            }).catch(err => {
-                console.error("AI Plan Error:", err);
             });
         });
     }
@@ -256,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(data => {
                     saveToneBtn.disabled = false;
                     if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Saved!', text: 'Your brand tone is now memorized and will be used for all ideas.' });
+                        Swal.fire({ icon: 'success', title: 'Saved!', text: 'Your brand tone is now memorized!' });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: data.error });
                     }
@@ -268,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Refinement Logic (Updated to use callAI if needed, but existing is fine for now)
+    // Refinement Logic
     if (refineBtn) {
         refineBtn.addEventListener('click', () => {
             const refinement = refineInput.value.trim();
@@ -287,12 +363,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyBtn) {
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(ideaText.innerText).then(() => {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<span class="icon"><i class="fa-solid fa-check"></i></span> Copied!';
-                setTimeout(() => { copyBtn.innerHTML = originalText; }, 2000);
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                setTimeout(() => { copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 2000);
             });
         });
     }
+
+    // Logout Handler
+    const logoutLink = document.querySelector('.logout-link');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const target = logoutLink.href;
+
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth()) {
+                    await firebase.auth().signOut();
+                }
+            } catch (err) {
+                console.error("Firebase signout error:", err);
+            }
+            window.location.href = target;
+        });
+    }
+
+    loadHistory(); // Initial history load
 });
 
 // --- Fixed PWA Installation Logic ---

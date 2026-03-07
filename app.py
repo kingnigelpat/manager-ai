@@ -4,12 +4,13 @@ import random
 import os
 import json
 import time
+import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 
 import firebase_admin
-from firebase_admin import credentials, auth
+from firebase_admin import credentials, auth, firestore
 
 import cloudinary
 import cloudinary.uploader
@@ -28,7 +29,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 # Security: Session & Cookies
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 # Detect if we should use secure cookies (default True in production)
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
@@ -73,7 +74,8 @@ csp = {
         'https://*.firebasestorage.app',
         'https://ipapi.co',
         'https://res.cloudinary.com',
-        'https://openrouter.ai'
+        'https://openrouter.ai',
+        'https://api.paystack.co'
     ],
     'frame-src': [
         '\'self\'',
@@ -107,6 +109,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 service_account_path = os.path.join(BASE_DIR, 'serviceAccountKey.json')
 cred = credentials.Certificate(service_account_path)
 firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 # Database setup (Using Absolute Path)
 DB_NAME = os.path.join(BASE_DIR, 'content_ideas.db')
@@ -239,12 +242,14 @@ class AI_Engine:
 
         # Universal Strategist Persona
         system_prompt = (
-            "You are a world-class Global Content Strategist and Growth Marketer. "
+            "You are 'The Manager'—a high-level Global Content Lead and Growth Architect. "
+            "You don't just give ideas; you provide strategic content assets. "
             "You possess 'Cultural Intelligence'—the ability to identify and leverage regional trends, "
-            "slang, and psychological triggers for any location while maintaining a professional standard. "
-            "Your goal is to create viral, high-converting content that turns casual viewers into loyal customers. "
+            "slang, and psychological triggers for any location while maintaining a premium professional standard. "
+            "Your goal is to build long-term brand equity and viral growth. "
             f"{lang_instruction} "
-            "Always be practical, trend-aware, and laser-focused on growth. Do not be generic."
+            "Avoid generic advice. Be specific, tactical, and innovative. "
+            "Think like a 7-figure marketing agency lead."
         )
         
         if brand_tone:
@@ -466,11 +471,14 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "LOGIN_REQUIRED"}), 401
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
 app.secret_key = os.getenv('SECRET_KEY', 'default_dev_key')
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 # app.config['UPLOAD_FOLDER'] already set at top
 
 # PIN Rate Limiter
@@ -514,9 +522,14 @@ def admin_login():
 
     if request.method == 'POST':
         pin = request.form.get('pin', '').strip()
-        # Hardcode fallback for online reliability
-        correct_pin = os.getenv('ADMIN_PIN', 'Olyviamywife2324').strip()
+        # SECURITY: Always use environment variable for secrets in production
+        correct_pin = os.getenv('ADMIN_PIN')
         
+        if not correct_pin:
+             # If not set, deny all attempts for safety
+             flash('Admin authentication is temporarily unavailable (System Config Error)')
+             return render_template('admin_login.html')
+
         if pin == correct_pin:
             session['admin_authenticated'] = True
             # Clear attempts on success
@@ -543,6 +556,8 @@ def intro():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         # FIREBASE LOGIN LOGIC
         data = request.get_json(silent=True) or {}
@@ -573,25 +588,28 @@ def login():
             conn = sqlite3.connect(DB_NAME, timeout=10)
             c = conn.cursor()
             
-            c.execute("SELECT id, is_subscribed, is_admin FROM users WHERE username = ?", (username,))
+            c.execute("SELECT id, is_subscribed, is_admin, plan_type FROM users WHERE username = ?", (username,))
             user_row = c.fetchone()
             
             if not user_row:
                 # First time login = Register in local DB
                 # Password hash is not needed anymore, can be empty or 'firebase'
-                c.execute("INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)", 
-                          (username, 'firebase_managed', 0))
+                c.execute("INSERT INTO users (username, password_hash, is_admin, plan_type) VALUES (?, ?, ?, ?)", 
+                          (username, 'firebase_managed', 0, 'free'))
                 conn.commit()
                 # Fetch new ID
-                c.execute("SELECT id, is_subscribed, is_admin FROM users WHERE username = ?", (username,))
+                c.execute("SELECT id, is_subscribed, is_admin, plan_type FROM users WHERE username = ?", (username,))
                 user_row = c.fetchone()
             
             conn.close()
             
             # Set Session
+            session.permanent = True
             session['user_id'] = user_row[0]
             session['username'] = username
             session['is_subscribed'] = bool(user_row[1])
+            session['plan_type'] = user_row[3] or 'free'
+            session['user_email'] = email # Store email for Paystack
             
             # GOD MODE ADMIN CHECK: Grant patricknigel33@gmail.com full privileges
             is_god_admin = (email == 'patricknigel33@gmail.com')
@@ -641,6 +659,8 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
     # Registration is now handled primarily on client side via Firebase
     # This route just serves the page or handles redirects
     return render_template('register.html')
@@ -696,6 +716,102 @@ def choose_plan(plan_name):
     display_price = f"{currency}{amount}" if amount else plan_info['price']
         
     return render_template('payment.html', plan=plan_info['name'], plan_id=plan_name.lower(), price=display_price, username=session.get('username'))
+
+@app.route('/api/pay/initialize/<plan_id>', methods=['POST'])
+@login_required
+def initialize_payment(plan_id):
+    if not PAYSTACK_SECRET_KEY:
+        return jsonify({'error': 'Payment gateway not configured'}), 500
+        
+    plans = {
+        'starter': 500000,   # 5000 * 100 kobo
+        'pro': 2500000,      # 25000 * 100
+        'business': 7500000  # 75000 * 100
+    }
+    
+    amount = plans.get(plan_id.lower())
+    if not amount:
+        return jsonify({'error': 'Invalid plan'}), 400
+        
+    email = session.get('user_email')
+    if not email:
+        return jsonify({'error': 'User email not found'}), 400
+        
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    # Generate a unique reference
+    reference = f"rae_{int(time.time())}_{random.randint(1000, 9999)}"
+    
+    payload = {
+        "email": email,
+        "amount": amount,
+        "reference": reference,
+        "callback_url": url_for('pay_callback', _external=True),
+        "metadata": {
+            "user_id": session['user_id'],
+            "plan_id": plan_id.lower()
+        }
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        res_data = response.json()
+        
+        if res_data.get('status'):
+            return jsonify({
+                'authorization_url': res_data['data']['authorization_url'],
+                'reference': reference
+            })
+        else:
+            return jsonify({'error': res_data.get('message', 'Initialization failed')}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pay/callback')
+def pay_callback():
+    reference = request.args.get('reference')
+    if not reference:
+        flash("No payment reference found.")
+        return redirect(url_for('pricing'))
+        
+    url = f"https://api.paystack.co/transaction/verify/{reference}"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        res_data = response.json()
+        
+        if res_data.get('status') and res_data['data']['status'] == 'success':
+            metadata = res_data['data']['metadata']
+            user_id = metadata['user_id']
+            plan_id = metadata['plan_id']
+            
+            # Update user plan in DB
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute("UPDATE users SET is_subscribed = 1, subscription_start = CURRENT_TIMESTAMP, plan_type = ? WHERE id = ?", (plan_id, user_id))
+            conn.commit()
+            conn.close()
+            
+            # Refresh session plan type
+            if session.get('user_id') == user_id:
+                session['is_subscribed'] = True
+                session['plan_type'] = plan_id
+                
+            flash(f"Success! Your account has been upgraded to the {plan_id.capitalize()} plan.")
+            return render_template('payment_success.html') # Need to ensure this exists or use a generic one
+        else:
+            flash("Payment verification failed.")
+            return redirect(url_for('pricing'))
+    except Exception as e:
+        flash(f"Error verifying payment: {str(e)}")
+        return redirect(url_for('pricing'))
 
 @app.route('/submit_payment', methods=['POST'])
 @login_required
@@ -996,9 +1112,20 @@ def generate_idea():
             c.execute("SELECT idea_content FROM ideas WHERE business_type = ? AND user_id = ?", (business_type, user_id))
             past_ideas = [row[0] for row in c.fetchall()]
             result = ai_engine.generate(business_type, platform, mood, goal, people, language, past_ideas, location, refinement, previous_idea, brand_tone)
-            # Store generation only for 'idea' mode
+            # Store generation initially in SQLite for limit checks
             c.execute("INSERT INTO ideas (user_id, business_type, idea_content) VALUES (?, ?, ?)", (user_id, business_type, result))
             conn.commit()
+
+            # Save to Firebase Firestore for permanent history
+            try:
+                db.collection('history').add({
+                    'user_id': str(user_id),
+                    'business': business_type,
+                    'content': result,
+                    'timestamp': firestore.SERVER_TIMESTAMP
+                })
+            except Exception as fe:
+                print(f"Firestore Save Error: {fe}")
         elif mode == 'weekly_plan':
             result = ai_engine.generate_weekly_plan(business_type, platform, language, location, brand_tone)
         elif mode == 'cta':
@@ -1012,6 +1139,80 @@ def generate_idea():
         return jsonify({"error": "Server Error", "message": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/history', methods=['GET'])
+@login_required
+def get_history():
+    user_id = str(session['user_id'])
+    try:
+        # Try with database sorting (requires composite index)
+        try:
+            docs_query = db.collection('history')\
+                     .where('user_id', '==', user_id)\
+                     .order_by('timestamp', direction=firestore.Query.DESCENDING)\
+                     .limit(40)
+            docs = docs_query.stream()
+            history_data = list(docs)
+        except Exception as query_err:
+            # Fallback: Fetch without ordering if index is missing, then sort in memory
+            if "requires an index" in str(query_err):
+                print("⚠️ Firestore index missing. Falling back to in-memory sort.")
+                docs = db.collection('history')\
+                         .where('user_id', '==', user_id)\
+                         .limit(60)\
+                         .stream()
+                # Sort by timestamp descending in memory
+                history_data = sorted(list(docs), key=lambda x: x.to_dict().get('timestamp') or 0, reverse=True)[:20]
+            else:
+                raise query_err
+        
+        history = []
+        for doc in history_data:
+            d = doc.to_dict()
+            ts = d.get('timestamp')
+            time_str = ts.strftime('%Y-%m-%d %H:%M') if hasattr(ts, 'strftime') else "Just now"
+            
+            history.append({
+                "id": doc.id,
+                "business": d.get('business'),
+                "content": d.get('content'),
+                "time": time_str
+            })
+        return jsonify({"history": history})
+    except Exception as e:
+        err_msg = str(e)
+        if "firestore.googleapis.com" in err_msg:
+            print("❌ FIREBASE ERROR: Cloud Firestore API is disabled.")
+            return jsonify({"error": "FIREBASE_DISABLED", "message": "Cloud Firestore is not enabled."}), 200
+        print(f"Fetch History Error: {e}")
+        return jsonify({"history": []})
+
+@app.route('/api/history/delete/<doc_id>', methods=['DELETE'])
+@login_required
+def delete_history(doc_id):
+    user_id = str(session['user_id'])
+    print(f"Attempting to delete history item: {doc_id} for user: {user_id}")
+    try:
+        doc_ref = db.collection('history').document(doc_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            print(f"Delete failed: Document {doc_id} not found.")
+            return jsonify({"error": "Not found"}), 404
+            
+        stored_user_id = str(doc.to_dict().get('user_id'))
+        if stored_user_id == user_id:
+            doc_ref.delete()
+            print(f"Successfully deleted history item: {doc_id}")
+            return jsonify({"success": True})
+        else:
+            print(f"Delete unauthorized: Stored UID {stored_user_id} != Session UID {user_id}")
+            return jsonify({"error": "Unauthorized"}), 403
+    except Exception as e:
+        print(f"Delete History Error: {e}")
+        err_msg = str(e)
+        if "firestore.googleapis.com" in err_msg:
+            return jsonify({"error": "FIREBASE_DISABLED", "message": "Cloud Firestore is disabled. Cannot delete."}), 500
+        return jsonify({"error": "Internal Server Error", "message": err_msg}), 500
 
 # Error Handlers to prevent information leakage
 @app.errorhandler(429)
