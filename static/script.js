@@ -5,11 +5,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const platformInput = document.getElementById('platform-input');
     const moodInput = document.getElementById('mood-input');
     const goalInput = document.getElementById('goal-input');
-    const peopleInput = document.getElementById('people-input');
     const languageInput = document.getElementById('language-input');
     const locationInput = document.getElementById('location-input');
-    const generateBtn = document.getElementById('generate-btn');
+    const peopleInput = document.getElementById('people-input');
+    const viralLinkInput = document.getElementById('viral-link');
+    const competitorHandleInput = document.getElementById('competitor-handle');
+    const competitorNicheInput = document.getElementById('competitor-niche');
+    const scoreContentInput = document.getElementById('score-content');
+    const scoreTypeInput = document.getElementById('score-type');
+    const mainGenerateBtn = document.getElementById('main-generate-btn');
+    const toolTabs = document.querySelectorAll('.tool-tab');
+    const toolForms = document.querySelectorAll('.tool-form');
+    const heroTitle = document.querySelector('#tool-hero h1');
+    const heroDesc = document.querySelector('#tool-hero p');
 
+    let currentTool = 'idea';
     // Sidebar Elements
     const sidebar = document.getElementById('sidebar');
     const menuToggleBtn = document.getElementById('menu-toggle-btn');
@@ -162,6 +172,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Tool Switching Logic
+    toolTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tool = tab.dataset.tool;
+            currentTool = tool;
+
+            // UI Feedback
+            toolTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Switch Forms
+            toolForms.forEach(f => f.classList.add('hidden'));
+            if (tool === 'idea' || tool === 'script' || tool === 'weekly_plan') {
+                document.getElementById('form-generative').classList.remove('hidden');
+                // Toggle sub-fields
+                const isWeekly = tool === 'weekly_plan';
+                document.getElementById('mood-group').classList.toggle('hidden', isWeekly);
+                document.getElementById('goal-group').classList.toggle('hidden', isWeekly);
+                document.getElementById('people-group').classList.toggle('hidden', isWeekly);
+            } else if (tool === 'viral_analyzer') {
+                document.getElementById('form-viral').classList.remove('hidden');
+            } else if (tool === 'competitor_scanner') {
+                document.getElementById('form-competitor').classList.remove('hidden');
+            } else if (tool === 'content_scorer') {
+                document.getElementById('form-scorer').classList.remove('hidden');
+            }
+
+            // Update Hero Text
+            const toolMap = {
+                'idea': { h: 'Post Idea Generator', p: 'Find the perfect viral angle for your business.' },
+                'script': { h: 'AI Script Writer', p: 'Turn ideas into high-converting video scripts.' },
+                'viral_analyzer': { h: 'Viral Video Analyzer', p: 'Break down why that video went viral.' },
+                'competitor_scanner': { h: 'Competitor Scanner', p: 'Reverse engineer your competitors strategy.' },
+                'content_scorer': { h: 'Content Score Engine', p: 'Score your content before you post it.' },
+                'weekly_plan': { h: 'Weekly Roadmap', p: 'Get a full 7-day strategic content calendar.' }
+            };
+            heroTitle.innerText = toolMap[tool].h;
+            heroDesc.innerText = toolMap[tool].p;
+
+            // Close sidebar on mobile after selecting tool
+            if (window.innerWidth <= 900) toggleSidebar();
+
+            // Scroll to top of app
+            document.getElementById('main-app').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
     // Helper to process and display result
     const displayResult = (data) => {
         const rawText = data.idea;
@@ -190,7 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const callAI = (mode, payload = {}) => {
         const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.classList.remove('hidden');
-        document.querySelector('.loading-text').innerText = "Working Magic...";
+
+        const modeLabels = {
+            'idea': 'Generating Idea...',
+            'script': 'Writing Script...',
+            'viral_analyzer': 'Analyzing Trends...',
+            'competitor_scanner': 'Scanning Competitor...',
+            'content_scorer': 'Scoring Content...',
+            'weekly_plan': 'Planning Week...'
+        };
+        document.querySelector('.loading-text').innerText = modeLabels[mode] || "Working Magic...";
 
         return fetch('/api/generate', {
             method: 'POST',
@@ -239,19 +305,45 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     };
 
-    // Generate Logic
-    if (generateBtn) {
-        generateBtn.addEventListener('click', () => {
-            if (!businessInput.value.trim()) {
-                Swal.fire({ icon: 'warning', title: 'Missing Info', text: 'Please tell us about your business first!' });
-                return;
+    // Main Action Button Logic
+    if (mainGenerateBtn) {
+        mainGenerateBtn.addEventListener('click', () => {
+            const payload = {};
+
+            // Validation & Payload Construction
+            if (currentTool === 'idea' || currentTool === 'script' || currentTool === 'weekly_plan') {
+                if (!businessInput.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'Missing Info', text: 'Please enter your business type.' });
+                    return;
+                }
+            } else if (currentTool === 'viral_analyzer') {
+                if (!viralLinkInput.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'Link Required', text: 'Paste a video link to analyze.' });
+                    return;
+                }
+                payload.link = viralLinkInput.value.trim();
+            } else if (currentTool === 'competitor_scanner') {
+                if (!competitorHandleInput.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'Handle Required', text: 'Enter a competitor handle or link.' });
+                    return;
+                }
+                payload.handle = competitorHandleInput.value.trim();
+                payload.competitorNiche = competitorNicheInput.value.trim();
+            } else if (currentTool === 'content_scorer') {
+                if (!scoreContentInput.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'Content Required', text: 'Paste content to score.' });
+                    return;
+                }
+                payload.content = scoreContentInput.value.trim();
+                payload.contentType = scoreTypeInput.value;
             }
-            generateBtn.disabled = true;
-            callAI('idea').then(data => {
+
+            mainGenerateBtn.disabled = true;
+            callAI(currentTool, payload).then(data => {
                 displayResult(data);
-                loadHistory(); // Refresh history
-                generateBtn.disabled = false;
-            }).catch(() => { generateBtn.disabled = false; });
+                if (currentTool === 'idea' || currentTool === 'script') loadHistory();
+                mainGenerateBtn.disabled = false;
+            }).catch(() => { mainGenerateBtn.disabled = false; });
         });
     }
 
@@ -279,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                         </div>
                     `,
-                    width: '800px',
+                    width: window.innerWidth > 900 ? '800px' : '95%',
                     showConfirmButton: false,
                     showCloseButton: true,
                     background: 'var(--card-bg)',
@@ -351,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!refinement || !currentRawIdea) return;
 
             refineBtn.disabled = true;
-            callAI('idea', { refinement: refinement, previous_idea: currentRawIdea }).then(data => {
+            callAI(currentTool, { refinement: refinement, previous_idea: currentRawIdea }).then(data => {
                 displayResult(data);
                 refineBtn.disabled = false;
                 refineInput.value = "";

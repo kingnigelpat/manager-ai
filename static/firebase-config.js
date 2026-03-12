@@ -3,7 +3,7 @@
 // with the real values from the Firebase Console (Project Settings > General > Your apps)
 
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY_HERE",
+    apiKey: "AIzaSyD1R6T2vRum5i_Q5ywZhN60NR2F9NVyvoQ",
     authDomain: "rae-manger-ai.firebaseapp.com",
     projectId: "rae-manger-ai",
     storageBucket: "rae-manger-ai.firebasestorage.app",

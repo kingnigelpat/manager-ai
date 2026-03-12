@@ -35,18 +35,48 @@
     <!-- Removed Subscription Modal since we have a dedicated pricing page now -->
 
     <div class="app-layout">
-        <!-- Sidebar for History -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
-                    <span class="logo-text">History</span>
+                    <span class="logo-text">Manager AI</span>
                 </div>
                 <button class="sidebar-close" id="sidebar-close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="history-list" id="history-list">
-                <div class="history-empty">No history yet. Start generating!</div>
+
+            <div class="sidebar-content">
+                <!-- Tool Picker (Moved to Sidebar) -->
+                <section class="tool-picker">
+                    <div class="tool-tabs" id="tool-tabs">
+                        <button class="tool-tab active" data-tool="idea">
+                            <i class="fa-solid fa-lightbulb"></i> <span class="tab-label">Idea</span>
+                        </button>
+                        <button class="tool-tab" data-tool="script">
+                            <i class="fa-solid fa-scroll"></i> <span class="tab-label">Script</span>
+                        </button>
+                        <button class="tool-tab" data-tool="viral_analyzer">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> <span class="tab-label">Viral</span>
+                        </button>
+                        <button class="tool-tab" data-tool="competitor_scanner">
+                            <i class="fa-solid fa-user-secret"></i> <span class="tab-label">Competitor</span>
+                        </button>
+                        <button class="tool-tab" data-tool="content_scorer">
+                            <i class="fa-solid fa-gauge-high"></i> <span class="tab-label">Scorer</span>
+                        </button>
+                        <button class="tool-tab" data-tool="weekly_plan">
+                            <i class="fa-solid fa-calendar-days"></i> <span class="tab-label">Roadmap</span>
+                        </button>
+                    </div>
+                </section>
+
+                <div class="history-section">
+                    <h3 class="sidebar-section-title">History</h3>
+                    <div class="history-list" id="history-list">
+                        <div class="history-empty">No history.</div>
+                    </div>
+                </div>
             </div>
+
             <div class="sidebar-footer">
                 <div class="user-info">
                     <i class="fa-solid fa-circle-user"></i>
@@ -91,159 +121,188 @@
             </header>
 
             <div class="container" id="main-app">
-                <main>
-                    <section class="input-section">
-                        <div class="hero-text">
-                            <h1>What are we posting today?</h1>
-                            <p>Let's find that viral angle for your business.</p>
-                        </div>
+                <!-- Tool Picker moved to sidebar -->
 
+                <section class="input-section">
+                    <div class="hero-text" id="tool-hero">
+                        <h1>Post Idea Generator</h1>
+                        <p>Find the perfect viral angle for your business.</p>
+                    </div>
+
+                    <!-- Settings shared across all tools -->
+                    <div class="config-core">
                         <div class="form-grid">
                             <div class="form-group full-width">
-                                <label for="business-input">Business Type & Daily Goal</label>
+                                <label for="business-input">My Business Type</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-briefcase"></i>
                                     <input type="text" id="business-input"
-                                        placeholder="e.g. Barber Shop, Fashion Brand, Bakery">
+                                        placeholder="e.g. Barber Shop, Fashion Brand">
                                 </div>
                             </div>
-
                             <div class="form-group">
                                 <label for="platform-input">Platform</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-hashtag"></i>
                                     <select id="platform-input">
-                                        <option value="instagram">Instagram (Reels/Post)</option>
+                                        <option value="instagram">Instagram</option>
                                         <option value="tiktok">TikTok</option>
-                                        <option value="instagram_tiktok">Multi-Channel (Both)</option>
                                         <option value="youtube">YouTube Shorts</option>
                                         <option value="linkedin">LinkedIn</option>
-                                        <option value="twitter">X (Twitter)</option>
-                                        <option value="facebook">Facebook</option>
                                     </select>
                                 </div>
                             </div>
-
                             <div class="form-group">
-                                <label for="language-input">Tone & Style</label>
+                                <label for="language-input">Speak in...</label>
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-language"></i>
+                                    <i class="fa-solid fa-comments"></i>
                                     <select id="language-input">
-                                        <option value="simple">Simple & Easy</option>
-                                        <option value="pidgin">Naija Pidgin</option>
-                                        <option value="standard">Standard Professional</option>
+                                        <option value="simple">Simple English</option>
+                                        <option value="pidgin">Pidgin</option>
+                                        <option value="standard">Professional</option>
                                     </select>
                                 </div>
                             </div>
-
-                            <div class="form-group full-width">
-                                <label for="location-input">Target Market / Location</label>
+                            <div class="form-group full-width" id="location-group">
+                                <label for="location-input">Target Audience Location</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-location-dot"></i>
-                                    <input type="text" id="location-input" placeholder="e.g. World Wide, Africa, Country, City">
+                                    <input type="text" id="location-input" placeholder="e.g. Worldwide, Nigeria, USA">
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="people-input">Talent</label>
+                    <!-- Tool: Idea & Script (Specific Fields) -->
+                    <div id="form-generative" class="tool-form">
+                        <div class="form-grid">
+                            <div class="form-group" id="mood-group">
+                                <label for="mood-input">Mood</label>
+                                <select id="mood-input">
+                                    <option value="happy">Energetic</option>
+                                    <option value="funny">Funny</option>
+                                    <option value="serious">Clean</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="goal-group">
+                                <label for="goal-input">Goal</label>
+                                <select id="goal-input">
+                                    <option value="get sales">Sales</option>
+                                    <option value="brand awareness">Awareness</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width" id="people-group">
+                                <label for="people-input">Talent (Who is in video?)</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-users"></i>
                                     <select id="people-input">
-                                        <option value="solo">Just Me (Solo)</option>
-                                        <option value="partner">Me + One Other</option>
-                                        <option value="team">My Whole Team</option>
-                                        <option value="customers">Me + Customers</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="mood-input">Aesthetic & Mood</label>
-                                <div class="input-wrapper">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                    <select id="mood-input">
-                                        <option value="happy">Energetic & Hype</option>
-                                        <option value="serious">Professional & Clean</option>
-                                        <option value="funny">Funny & Relatable</option>
-                                        <option value="urgent">Urgent (Sales/Promo)</option>
-                                        <option value="sincere">Heartfelt & Story</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label for="goal-input">Campaign Objective</label>
-                                <div class="input-wrapper">
-                                    <i class="fa-solid fa-bullseye"></i>
-                                    <select id="goal-input">
-                                        <option value="get sales">Get Sales / Orders</option>
-                                        <option value="get followers">Get New Followers</option>
-                                        <option value="educate">Educate Customers</option>
-                                        <option value="brand awareness">Build Awareness</option>
-                                        <option value="engagement">Get Comments/Shares</option>
+                                        <option value="solo">Solo (Me Only)</option>
+                                        <option value="partner">Me + 1 Person</option>
+                                        <option value="team">Full Team</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="action-area">
-                            <button id="generate-btn" class="primary-btn main-action">
-                                <i class="fa-solid fa-bolt"></i> Generate Strategy
-                            </button>
-
-                            {% if plan_type in ['pro', 'business'] %}
-                            <button id="weekly-plan-btn" class="secondary-btn" title="7-Day Roadmap">
-                                <i class="fa-solid fa-calendar-week"></i> 7-Day Roadmap
-                            </button>
-                            {% endif %}
+                    <!-- Tool: Viral Analyzer -->
+                    <div id="form-viral" class="tool-form hidden">
+                        <div class="form-group full-width">
+                            <label for="viral-link">Video Link (Reel/TikTok/YouTube)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-link"></i>
+                                <input type="text" id="viral-link" placeholder="Paste link here...">
+                            </div>
                         </div>
+                    </div>
 
-                        {% if plan_type == 'business' %}
-                        <div class="brand-tone-section premium-card">
-                            <label for="brand-tone-input">
-                                <i class="fa-solid fa-brain"></i> Brand Tone Memory:
-                            </label>
-                            <textarea id="brand-tone-input"
-                                placeholder="Describe your brand's voice (e.g. funny, aggressive, classy, street-smart...)">{{ brand_tone }}</textarea>
-                            <button id="save-tone-btn" class="secondary-btn small">Save Memory</button>
+                    <!-- Tool: Competitor Scanner -->
+                    <div id="form-competitor" class="tool-form hidden">
+                        <div class="form-group full-width">
+                            <label for="competitor-handle">Competitor Username / Profile Link</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-at"></i>
+                                <input type="text" id="competitor-handle" placeholder="@nike or profile link">
+                            </div>
                         </div>
+                        <div class="form-group full-width">
+                            <label for="competitor-niche">Their Core Business (Optional)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-tag"></i>
+                                <input type="text" id="competitor-niche" placeholder="e.g. Luxury Footwear, Tech Blog">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tool: Content Scorer -->
+                    <div id="form-scorer" class="tool-form hidden">
+                        <div class="form-group full-width">
+                            <label for="score-type">What are we scoring?</label>
+                            <select id="score-type" style="margin-bottom: 15px;">
+                                <option value="idea">Video Idea</option>
+                                <option value="caption">Post Caption</option>
+                                <option value="script">Full Script</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="score-content">Paste your Content</label>
+                            <textarea id="score-content" placeholder="Paste here..."
+                                style="min-height: 120px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="action-area">
+                        <button id="main-generate-btn" class="primary-btn main-action">
+                            <i class="fa-solid fa-bolt"></i> Generate
+                        </button>
+                    </div>
+
+                    {% if plan_type == 'business' %}
+                    <div class="brand-tone-section premium-card" id="brand-tone-block">
+                        <label for="brand-tone-input">
+                            <i class="fa-solid fa-brain"></i> Brand Tone Memory:
+                        </label>
+                        <textarea id="brand-tone-input"
+                            placeholder="Describe your brand's voice...">{{ brand_tone }}</textarea>
+                        <button id="save-tone-btn" class="secondary-btn small">Save Memory</button>
+                    </div>
+                    {% endif %}
+
+                </section>
+
+                <section class="result-section hidden" id="result-section">
+                    <div class="strategy-canvas">
+                        <div class="canvas-header">
+                            <h2><i class="fa-solid fa-chess-knight"></i> Generated Strategy</h2>
+                            <div class="canvas-actions">
+                                <button id="copy-btn" class="icon-btn" title="Copy Content"><i
+                                        class="fa-solid fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="idea-box" id="idea-text"></div>
+                    </div>
+
+                    <!-- Refinement Area -->
+                    <div class="refinement-card">
+                        <h3><i class="fa-solid fa-screwdriver-wrench"></i> Refine Your Result</h3>
+                        <div class="refine-flex">
+                            <input type="text" id="refine-input"
+                                placeholder="e.g. Make it funnier, change the music...">
+                            <button id="refine-btn" class="primary-btn">Refine</button>
+                        </div>
+                    </div>
+
+                    <div class="pro-tools-row">
+                        {% if plan_type in ['pro', 'business'] %}
+                        <button id="optimize-cta-btn" class="tool-btn cta">
+                            <i class="fa-solid fa-bullhorn"></i> Optimize CTA
+                        </button>
+                        <button id="rewrite-hook-btn" class="tool-btn hook">
+                            <i class="fa-solid fa-anchor"></i> Viral Hooks
+                        </button>
                         {% endif %}
-
-                    </section>
-
-                    <section class="result-section hidden" id="result-section">
-                        <div class="strategy-canvas">
-                            <div class="canvas-header">
-                                <h2><i class="fa-solid fa-chess-knight"></i> Generated Strategy</h2>
-                                <div class="canvas-actions">
-                                    <button id="copy-btn" class="icon-btn" title="Copy Content"><i
-                                            class="fa-solid fa-copy"></i></button>
-                                </div>
-                            </div>
-                            <div class="idea-box" id="idea-text"></div>
-                        </div>
-
-                        <!-- Refinement Area -->
-                        <div class="refinement-card">
-                            <h3><i class="fa-solid fa-screwdriver-wrench"></i> Refine Your Result</h3>
-                            <div class="refine-flex">
-                                <input type="text" id="refine-input"
-                                    placeholder="e.g. Make it funnier, change the music...">
-                                <button id="refine-btn" class="primary-btn">Refine</button>
-                            </div>
-                        </div>
-
-                        <div class="pro-tools-row">
-                            {% if plan_type in ['pro', 'business'] %}
-                            <button id="optimize-cta-btn" class="tool-btn cta">
-                                <i class="fa-solid fa-bullhorn"></i> Optimize CTA
-                            </button>
-                            <button id="rewrite-hook-btn" class="tool-btn hook">
-                                <i class="fa-solid fa-anchor"></i> Viral Hooks
-                            </button>
-                            {% endif %}
-                        </div>
-                    </section>
+                    </div>
+                </section>
                 </main>
             </div>
         </div>
