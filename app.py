@@ -101,7 +101,7 @@ cloudinary.config(
     api_secret = os.getenv('CLOUDINARY_API_SECRET'),
     secure = True
 )
-app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key_for_dev_only')
+app.secret_key = os.getenv('SECRET_KEY') or os.urandom(24)
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -612,7 +612,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-app.secret_key = os.getenv('SECRET_KEY', 'default_dev_key')
+# Removed redundant app.secret_key assignment
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 # app.config['UPLOAD_FOLDER'] already set at top
 
