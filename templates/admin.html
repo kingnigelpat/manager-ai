@@ -382,13 +382,19 @@
                             else 'N/A' }}</small></td>
                     <td data-label="Actions">
                         <div class="action-group">
-                            {% if user['is_subscribed'] %}
-                            <a href="{{ url_for('terminate_plan', user_id=user['id']) }}" class="action-btn"
-                                style="background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2);"
-                                onclick="return confirm('Downgrade this user to Free plan?')">
-                                <i class="fa-solid fa-arrow-down"></i> Downgrade
-                            </a>
-                            {% endif %}
+                            <form action="{{ url_for('change_user_plan', user_id=user['id']) }}" method="POST" style="margin-bottom: 8px;">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap; width: 100%;">
+                                    <select name="new_plan" style="flex: 1; padding: 6px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color); font-size: 0.8rem; min-width: 90px; height: 32px;">
+                                        <option value="free" {% if not user['is_subscribed'] %}selected{% endif %}>Free</option>
+                                        <option value="starter" {% if user['plan_type'] == 'starter' and user['is_subscribed'] %}selected{% endif %}>Starter</option>
+                                        <option value="pro" {% if user['plan_type'] == 'pro' and user['is_subscribed'] %}selected{% endif %}>Pro</option>
+                                        <option value="business" {% if user['plan_type'] == 'business' and user['is_subscribed'] %}selected{% endif %}>Business</option>
+                                    </select>
+                                    <button type="submit" class="action-btn" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 8px; width: auto; min-width: 60px; height: 32px; font-size: 0.8rem;" onclick="return confirm('Change this user\'s plan?')">
+                                        <i class="fa-solid fa-rotate"></i> Update
+                                    </button>
+                                </div>
+                            </form>
 
                             <a href="{{ url_for('delete_user', user_id=user['id']) }}" class="action-btn btn-delete"
                                 onclick="return confirm('EXTREME WARNING: Permanently delete this user?')">

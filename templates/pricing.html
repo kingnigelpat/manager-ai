@@ -8,314 +8,988 @@
     <meta name="description"
         content="Choose the perfect growth plan for your business. Affordable AI-powered social media management and strategy.">
     <link rel="canonical" href="https://manager.raehub.live/pricing">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .pricing-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem;
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F5D060;
+            --gold-dim: rgba(212, 175, 55, 0.12);
+            --gold-glow: rgba(212, 175, 55, 0.25);
+            --ink: #080608;
+            --surface-dark: rgba(12, 10, 14, 0.95);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--ink);
+            color: #eee;
+            font-family: 'Space Grotesk', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Ambient glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30vh; right: -20vw;
+            width: 70vw; height: 70vh;
+            background: radial-gradient(ellipse, rgba(212,175,55,0.06) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── Header ── */
+        .pricing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: rgba(8,6,8,0.85);
+            backdrop-filter: blur(16px);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        /* ── Hero ── */
+        .pricing-hero {
             text-align: center;
+            padding: 52px 20px 36px;
+            position: relative; z-index: 1;
+        }
+
+        .pricing-hero .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--gold-dim);
+            border: 1px solid rgba(212,175,55,0.2);
+            color: var(--gold);
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .pricing-hero h1 {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 700;
+            margin: 0 0 14px;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+        }
+
+        .pricing-hero h1 .gold { color: var(--gold); }
+
+        .pricing-hero p {
+            color: rgba(255,255,255,0.45);
+            max-width: 520px;
+            margin: 0 auto 32px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* ── Free Trial Banner ── */
+        .free-banner {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 16px;
+            padding: 18px 24px;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            text-align: left;
+        }
+
+        .free-banner-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .free-banner h3 {
+            margin: 0 0 4px;
+            font-size: 1rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .free-banner p {
+            margin: 0;
+            font-size: 0.87rem;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.5;
+        }
+
+        /* ── Pricing Grid ── */
+        .pricing-section {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 16px 80px;
+            position: relative; z-index: 1;
         }
 
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
         }
 
+        /* ── Plan Card ── */
         .plan-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 24px;
-            padding: 2.5rem;
-            transition: transform 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            padding: 28px 24px 24px;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .plan-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            border-color: rgba(212,175,55,0.25);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
 
-        .plan-header {
-            margin-bottom: 2rem;
+        /* Free plan */
+        .plan-card.free-plan {
+            border-style: dashed;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        /* Pro/Business premium */
+        .plan-card.popular {
+            border-color: var(--gold);
+            background: linear-gradient(160deg, rgba(212,175,55,0.08), rgba(8,6,8,0.95));
+            box-shadow: 0 0 40px rgba(212,175,55,0.12);
+        }
+
+        .plan-card.business-plan {
+            border-color: rgba(212,175,55,0.4);
+        }
+
+        /* Badge */
+        .plan-badge {
+            position: absolute;
+            top: 18px; right: -1px;
+            background: var(--gold);
+            color: #000;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 4px 14px 4px 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .plan-icon {
+            font-size: 1.6rem;
+            margin-bottom: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px; height: 52px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .plan-card.popular .plan-icon {
+            background: var(--gold-dim);
+            border-color: rgba(212,175,55,0.2);
+            color: var(--gold);
         }
 
         .plan-name {
-            font-size: 1.5rem;
+            font-size: 1.15rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: var(--text-main);
+            margin: 0 0 6px;
+            color: #fff;
+        }
+
+        .plan-tagline {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.4);
+            margin: 0 0 20px;
+            line-height: 1.4;
+        }
+
+        .plan-price-wrap {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
 
         .plan-price {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+
+        .plan-card.popular .plan-price { color: var(--gold); }
+
+        .plan-currency {
+            font-size: 1.2rem;
+            font-weight: 600;
+            vertical-align: super;
         }
 
         .plan-period {
-            font-size: 1rem;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        .plan-features {
-            text-align: left;
-            margin-bottom: 2rem;
-            flex-grow: 1;
-        }
-
-        .plan-features ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .plan-features li {
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        .plan-features i {
-            color: var(--secondary-color);
-        }
-
-        .popular-badge {
-            position: absolute;
-            top: 20px;
-            right: -30px;
-            background: var(--primary-color);
-            color: white;
-            padding: 5px 40px;
-            transform: rotate(45deg);
             font-size: 0.8rem;
-            font-weight: 600;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            color: rgba(255,255,255,0.35);
+            margin-top: 4px;
         }
 
-        .back-link {
+        .plan-free-label {
+            font-size: 2rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: -0.04em;
+        }
+
+        /* Features */
+        .plan-features {
+            flex: 1;
+            margin-bottom: 24px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.88rem;
+            line-height: 1.4;
+            color: rgba(255,255,255,0.75);
+        }
+
+        .feature-item:last-child { border-bottom: none; }
+
+        .feature-item .fi-icon {
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+            width: 16px; text-align: center;
+        }
+
+        .fi-check { color: #4ade80; }
+        .fi-check-gold { color: var(--gold); }
+        .fi-x { color: rgba(255,255,255,0.2); }
+
+        .feature-item.locked {
+            color: rgba(255,255,255,0.25);
+        }
+
+        .feature-item.locked .fi-icon { color: rgba(255,255,255,0.15); }
+
+        .feature-item strong { color: #fff; font-weight: 600; }
+        .plan-card.popular .feature-item strong { color: var(--gold-light); }
+
+        /* Limit badge */
+        .limit-pill {
             display: inline-block;
-            margin-top: 2rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            cursor: pointer;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-left: 4px;
         }
 
-        .back-link:hover {
-            color: var(--text-main);
+        .plan-card.popular .limit-pill {
+            background: var(--gold-dim);
+            border-color: rgba(212,175,55,0.2);
+            color: var(--gold);
+        }
+
+        /* CTA Button */
+        .plan-cta {
+            width: 100%;
+            padding: 15px;
+            border-radius: 14px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            transition: all 0.25s ease;
+        }
+
+        .cta-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+        }
+
+        .cta-outline:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+
+        .cta-gold {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 8px 28px rgba(212,175,55,0.3);
+        }
+
+        .cta-gold:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 14px 36px rgba(212,175,55,0.4);
+        }
+
+        .cta-dark-gold {
+            background: rgba(212,175,55,0.12);
+            border: 1px solid rgba(212,175,55,0.35);
+            color: var(--gold);
+        }
+
+        .cta-dark-gold:hover {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+
+        .manual-link {
+            display: block;
+            text-align: center;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.3);
+            text-decoration: none;
+            margin-top: 10px;
+            transition: color 0.2s;
+        }
+
+        .manual-link:hover { color: rgba(255,255,255,0.6); }
+
+        /* ── Feature Comparison Table ── */
+        .compare-section {
+            max-width: 1080px;
+            margin: 0 auto 80px;
+            padding: 0 16px;
+            position: relative; z-index: 1;
+        }
+
+        .compare-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 28px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            font-size: 0.88rem;
+        }
+
+        .compare-table th {
+            background: rgba(255,255,255,0.04);
+            padding: 14px 16px;
+            text-align: center;
+            font-weight: 700;
+            color: rgba(255,255,255,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .compare-table th:first-child { text-align: left; }
+        .compare-table th.th-popular { color: var(--gold); background: rgba(212,175,55,0.05); }
+
+        .compare-table td {
+            padding: 12px 16px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.5);
+        }
+
+        .compare-table td:first-child {
+            text-align: left;
+            color: rgba(255,255,255,0.7);
+            font-weight: 500;
+        }
+
+        .compare-table tr:last-child td { border-bottom: none; }
+        .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .ct-yes { color: #4ade80; font-size: 1rem; }
+        .ct-no { color: rgba(255,255,255,0.15); font-size: 1rem; }
+        .ct-gold { color: var(--gold); font-weight: 700; font-size: 1rem; }
+        .ct-label { font-size: 0.8rem; font-weight: 600; }
+
+        /* ── FAQ ── */
+        .faq-section {
+            max-width: 700px;
+            margin: 0 auto 80px;
+            padding: 0 16px;
+            position: relative; z-index: 1;
+        }
+
+        .faq-title {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .faq-item {
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .faq-q {
+            padding: 16px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.92rem;
+            color: rgba(255,255,255,0.85);
+            transition: background 0.2s;
+        }
+
+        .faq-q:hover { background: rgba(255,255,255,0.03); }
+        .faq-q.open { color: var(--gold); }
+
+        .faq-a {
+            display: none;
+            padding: 0 18px 16px;
+            font-size: 0.87rem;
+            color: rgba(255,255,255,0.45);
+            line-height: 1.6;
+        }
+
+        .faq-a.open { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 440px;
+                margin: 0 auto;
+            }
+
+            .compare-section { display: none; }
+
+            .free-banner {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .free-banner-icon { margin: 0 auto; }
+        }
+
+        @media (max-width: 480px) {
+            .pricing-header { padding: 14px 16px; }
+            .pricing-hero { padding: 36px 12px 24px; }
+            .plan-card { padding: 22px 18px 20px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="pricing-container">
-        <header>
-            <div class="logo">
-                <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
-                <span class="logo-text">Manager AI <small style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by
-                        Rae</small></span>
-            </div>
-            <a href="{{ url_for('dashboard') }}" class="secondary-btn">Close</a>
-        </header>
+    <!-- Header -->
+    <header class="pricing-header">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+            <span class="logo-text">Manager AI <small style="font-size:0.55em; opacity:0.5; font-weight:400">by Rae</small></span>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="secondary-btn" style="padding:9px 16px; font-size:0.87rem;">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </a>
+    </header>
 
-        <h1>Invest in Your Growth</h1>
-        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">High-impact strategy for every budget.
-            Content that converts, prices that make sense.</p>
+    <!-- Hero -->
+    <div class="pricing-hero">
+        <div class="eyebrow">
+            <i class="fa-solid fa-crown"></i>
+            Choose Your Growth Level
+        </div>
+        <h1>Invest in Your <span class="gold">Viral Growth</span></h1>
+        <p>Every plan gives you access to Africa's most powerful AI content strategist. No fluff — only results.</p>
 
-        <div class="pricing-grid">
-            <!-- Starter Plan -->
-            <div class="plan-card">
-                <div class="plan-header">
-                    <div class="plan-name">🟢 Starter Plan</div>
-                    <div class="plan-price" id="starter-price">₦5,000<span class="plan-period">/month</span></div>
-                </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fa-solid fa-check"></i> Idea Generator (Basic)</li>
-                        <li><i class="fa-solid fa-check"></i> 10 Generations per week</li>
-                        <li><i class="fa-solid fa-check"></i> Standard Hook/CTA tips</li>
-                        <li><i class="fa-solid fa-xmark" style="color: #ef4444;"></i> No Viral Analyzer</li>
-                        <li><i class="fa-solid fa-xmark" style="color: #ef4444;"></i> No Content Scorer</li>
-                    </ul>
-                </div>
-                <button onclick="payWithPaystack('starter')" class="glow-btn"
-                    style="text-align: center; text-decoration: none; display: block; width: 100%; border: none; cursor: pointer;">Get
-                    Started</button>
-                <div style="text-align: center; margin-top: 12px;">
-                    <a href="{{ url_for('choose_plan', plan_name='starter') }}" id="starter-link"
-                        style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; opacity: 0.7;">
-                        <i class="fa-solid fa-bank"></i> Manual/Bank Transfer
-                    </a>
-                </div>
-            </div>
-
-            <!-- Pro Plan -->
-            <div class="plan-card" style="border-color: #3b82f6;">
-                <div class="popular-badge" style="background: #3b82f6;">BEST VALUE</div>
-                <div class="plan-header">
-                    <div class="plan-name">🔵 Pro Plan</div>
-                    <div class="plan-price" id="pro-price">₦25,000<span class="plan-period">/month</span></div>
-                </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fa-solid fa-check"></i> <strong>Unlimited Idea Generations</strong></li>
-                        <li><i class="fa-solid fa-check"></i> AI Video Script Generator</li>
-                        <li><i class="fa-solid fa-check"></i> Viral Video Analyzer</li>
-                        <li><i class="fa-solid fa-check"></i> Content Score Engine</li>
-                        <li><i class="fa-solid fa-check"></i> Weekly Strategic Roadmap</li>
-                    </ul>
-                </div>
-                <button onclick="payWithPaystack('pro')" class="glow-btn"
-                    style="text-align: center; text-decoration: none; display: block; width: 100%; border: none; cursor: pointer; background: #3b82f6;">Go
-                    Pro</button>
-                <div style="text-align: center; margin-top: 12px;">
-                    <a href="{{ url_for('choose_plan', plan_name='pro') }}" id="pro-link"
-                        style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; opacity: 0.7;">
-                        <i class="fa-solid fa-bank"></i> Manual/Bank Transfer
-                    </a>
-                </div>
-            </div>
-
-            <!-- Business Plan -->
-            <div class="plan-card" style="border-color: #ef4444;">
-                <div class="plan-header">
-                    <div class="plan-name">🔴 Business Plan</div>
-                    <div class="plan-price" id="business-price">₦75,000<span class="plan-period">/month</span></div>
-                </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fa-solid fa-check"></i> <strong>Competitor Content Scanner</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>Brand Tone Memory</strong></li>
-                        <li><i class="fa-solid fa-check"></i> Personalized AI Persona</li>
-                        <li><i class="fa-solid fa-check"></i> Priority API Processing</li>
-                        <li><i class="fa-solid fa-check"></i> 24/7 Strategic Support</li>
-                    </ul>
-                </div>
-                <button onclick="payWithPaystack('business')" class="glow-btn"
-                    style="text-align: center; text-decoration: none; display: block; width: 100%; border: none; cursor: pointer; background: #ef4444;">Scale
-                    Up</button>
-                <div style="text-align: center; margin-top: 12px;">
-                    <a href="{{ url_for('choose_plan', plan_name='business') }}" id="business-link"
-                        style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; opacity: 0.7;">
-                        <i class="fa-solid fa-bank"></i> Manual/Bank Transfer
-                    </a>
-                </div>
+        <!-- Free Trial Banner -->
+        <div class="free-banner">
+            <div class="free-banner-icon">🎁</div>
+            <div>
+                <h3>Free Trial — One Business-Class Prompt, On Us</h3>
+                <p>New here? You get <strong>one full business-class AI strategy</strong> completely free — no credit card needed. After that, upgrade to keep the momentum going.</p>
             </div>
         </div>
     </div>
+
+    <!-- Pricing Cards -->
+    <section class="pricing-section">
+        <div class="pricing-grid">
+
+            <!-- FREE PLAN -->
+            <div class="plan-card free-plan">
+                <div class="plan-icon">🎁</div>
+                <div class="plan-name">Free Trial</div>
+                <div class="plan-tagline">One shot. Full power. See what you're capable of.</div>
+
+                <div class="plan-price-wrap">
+                    <div class="plan-free-label">FREE</div>
+                    <div class="plan-period">One-time lifetime prompt · No card needed</div>
+                </div>
+
+                <ul class="plan-features" style="list-style:none; padding:0; margin:0;">
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span><strong>1 Business-Class Prompt</strong> — full power, once</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Big Idea + Step-by-Step breakdown</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Caption + Hashtags + Best Time to Post</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Pro Tips from The Manager AI</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Unlimited daily prompts</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Script Generator & Content Plans</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Viral Analyzer & Competitor Scanner</span>
+                    </li>
+                </ul>
+
+                <a href="{{ url_for('dashboard') }}" class="plan-cta cta-outline">
+                    <i class="fa-solid fa-play"></i> Try For Free
+                </a>
+            </div>
+
+            <!-- STARTER PLAN -->
+            <div class="plan-card">
+                <div class="plan-icon" style="color: #a78bfa;">🚀</div>
+                <div class="plan-name">Starter</div>
+                <div class="plan-tagline">Build consistency. Grow your presence daily.</div>
+
+                <div class="plan-price-wrap">
+                    <div class="plan-price">
+                        <span class="plan-currency" id="starter-curr">₦</span><span id="starter-amount">19,000</span>
+                    </div>
+                    <div class="plan-period">per month · cancel anytime</div>
+                </div>
+
+                <ul class="plan-features" style="list-style:none; padding:0; margin:0;">
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span><strong>3 AI Prompts per day</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Idea & Hooks Generator</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Script & Caption Generator</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>Hashtag Generator</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check">✓</span>
+                        <span>1-Week Content Calendar</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Viral Video Analyzer</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Content Score Engine</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Competitor Scanner</span>
+                    </li>
+                </ul>
+
+                <button onclick="payWithPaystack('starter')" class="plan-cta cta-outline" style="border-color:rgba(167,139,250,0.4); color:#a78bfa;">
+                    <i class="fa-solid fa-rocket"></i> Get Starter
+                </button>
+                <a href="{{ url_for('choose_plan', plan_name='starter') }}" id="starter-manual-link" class="manual-link">
+                    <i class="fa-solid fa-building-columns"></i> Pay via Bank Transfer
+                </a>
+            </div>
+
+            <!-- PRO PLAN — MOST POPULAR -->
+            <div class="plan-card popular">
+                <div class="plan-badge">BEST VALUE</div>
+                <div class="plan-icon">👑</div>
+                <div class="plan-name">Pro</div>
+                <div class="plan-tagline">For serious creators ready to scale fast.</div>
+
+                <div class="plan-price-wrap">
+                    <div class="plan-price">
+                        <span class="plan-currency" id="pro-curr">₦</span><span id="pro-amount">75,000</span>
+                    </div>
+                    <div class="plan-period">per month · cancel anytime</div>
+                </div>
+
+                <ul class="plan-features" style="list-style:none; padding:0; margin:0;">
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span><strong>5 AI Prompts per day</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span>Everything in Starter</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span><strong>AI Chat Refinement</strong> — tweak any result</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span><strong>Viral Video Analyzer</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span><strong>Content Score Engine</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span>2-Week Content Calendar</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon fi-check-gold">✓</span>
+                        <span>CTA Optimizer + Hook Rewriter</span>
+                    </li>
+                    <li class="feature-item locked">
+                        <span class="fi-icon fi-x">✕</span>
+                        <span>Competitor Scanner</span>
+                    </li>
+                </ul>
+
+                <button onclick="payWithPaystack('pro')" class="plan-cta cta-gold">
+                    <i class="fa-solid fa-crown"></i> Go Pro
+                </button>
+                <a href="{{ url_for('choose_plan', plan_name='pro') }}" id="pro-manual-link" class="manual-link">
+                    <i class="fa-solid fa-building-columns"></i> Pay via Bank Transfer
+                </a>
+            </div>
+
+            <!-- BUSINESS PLAN -->
+            <div class="plan-card business-plan">
+                <div class="plan-icon" style="color: var(--gold);">🏆</div>
+                <div class="plan-name">Business</div>
+                <div class="plan-tagline">The full arsenal. Unlimited. Unstoppable.</div>
+
+                <div class="plan-price-wrap">
+                    <div class="plan-price" style="color: var(--gold-light);">
+                        <span class="plan-currency" id="biz-curr">₦</span><span id="biz-amount">150,000</span>
+                    </div>
+                    <div class="plan-period">per month · cancel anytime</div>
+                </div>
+
+                <ul class="plan-features" style="list-style:none; padding:0; margin:0;">
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span><strong>Unlimited AI Prompts daily</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span>Everything in Pro</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span><strong>Competitor Scanner</strong> — steal their strategy</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span><strong>Brand Tone Memory</strong> — AI learns your voice</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span><strong>1-Month Content Calendar</strong></span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span>Personalised Graphic Design Image</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span><strong>Human Assistant</strong> via direct DM</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="fi-icon" style="color:var(--gold);">✓</span>
+                        <span>Priority Support</span>
+                    </li>
+                </ul>
+
+                <button onclick="payWithPaystack('business')" class="plan-cta cta-dark-gold">
+                    <i class="fa-solid fa-trophy"></i> Scale Up
+                </button>
+                <a href="{{ url_for('choose_plan', plan_name='business') }}" id="biz-manual-link" class="manual-link">
+                    <i class="fa-solid fa-building-columns"></i> Pay via Bank Transfer
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Feature Comparison Table (Desktop Only) -->
+    <section class="compare-section">
+        <h2 class="compare-title">What's Included in Each Plan</h2>
+        <table class="compare-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>Free</th>
+                    <th>Starter</th>
+                    <th class="th-popular">Pro 👑</th>
+                    <th>Business</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Daily AI Prompts</td>
+                    <td class="ct-label">Once (lifetime)</td>
+                    <td class="ct-label">3 / day</td>
+                    <td class="ct-label" style="color:var(--gold)">5 / day</td>
+                    <td class="ct-label">Unlimited</td>
+                </tr>
+                <tr>
+                    <td>Idea & Hooks Generator</td>
+                    <td class="ct-yes">✓</td>
+                    <td class="ct-yes">✓</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Script & Caption Generator</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-yes">✓</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Hashtag Generator</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-yes">✓</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Content Calendar</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-label">1 Week</td>
+                    <td class="ct-label" style="color:var(--gold)">2 Weeks</td>
+                    <td class="ct-label">1 Month</td>
+                </tr>
+                <tr>
+                    <td>AI Chat Refinement</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Viral Video Analyzer</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Content Score Engine</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>CTA Optimizer + Hook Rewriter</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-gold">✓</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Competitor Scanner</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Brand Tone Memory</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+                <tr>
+                    <td>Human Assistant (DM)</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-no">✕</td>
+                    <td class="ct-yes">✓</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+        <h2 class="faq-title">Frequently Asked Questions</h2>
+
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+                Can I really use the app for free? <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.5;"></i>
+            </div>
+            <div class="faq-a">Yes! Every new account gets 1 full business-class strategy prompt completely free. You'll experience the full power of Manager AI before you spend a kobo.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+                How does billing work? <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.5;"></i>
+            </div>
+            <div class="faq-a">Plans are billed monthly. You can pay by card (Paystack) or by bank transfer. Bank transfers are manually verified by our team and activated within a few hours after proof of payment.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+                What happens when my plan expires? <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.5;"></i>
+            </div>
+            <div class="faq-a">Your account automatically reverts to the free tier at midnight UTC on your expiry date. You won't be charged anything extra — you simply won't be able to generate new content until you renew.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+                I can't pay by card. What are my options? <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.5;"></i>
+            </div>
+            <div class="faq-a">No problem! Every plan has a "Pay via Bank Transfer" option. You'll transfer to our GTBank account, upload your receipt, and our team will activate your plan manually.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+                Can I upgrade or downgrade my plan? <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.5;"></i>
+            </div>
+            <div class="faq-a">Yes! You can upgrade anytime. Contact us on Instagram @rae__hub to request a plan change and we'll sort you out.</div>
+        </div>
+    </section>
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+        // ── Paystack Payment ──────────────────────────────────────
         function payWithPaystack(planId) {
             Swal.fire({
-                title: 'Securing Connection...',
-                text: 'Redirecting to secure gateway',
+                title: 'Securing Payment...',
+                text: 'Redirecting to Paystack',
                 allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                didOpen: () => Swal.showLoading()
             });
 
             fetch(`/api/pay/initialize/${planId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.authorization_url) {
+                    window.location.href = data.authorization_url;
+                } else if (data.error === 'Payment gateway not configured') {
+                    window.location.href = `/plan/${planId}`;
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Payment Error', text: data.error || 'Could not initialize payment.' });
                 }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.authorization_url) {
-                        window.location.href = data.authorization_url;
-                    } else if (data.error === 'Payment gateway not configured') {
-                        // Dynamic Fallback: Redirect to manual payment if Paystack key is missing
-                        window.location.href = `/plan/${planId}`;
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Payment Error',
-                            text: data.error || 'Could not initialize payment.'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'System Error',
-                        text: 'Connection failed. Please try again later.'
-                    });
-                });
-        }
-    </script>
-
-    <!-- Location-Aware Pricing Script -->
-    <script>
-        const pricingData = {
-            'NG': { currency: '₦', starter: '5,000', pro: '25,000', business: '75,000' },
-            'GH': { currency: 'GH₵', starter: '150', pro: '380', business: '1,500' },
-            'KE': { currency: 'KSh', starter: '1,300', pro: '3,200', business: '12,000' },
-            'ZA': { currency: 'R', starter: '190', pro: '470', business: '1,800' },
-            'EG': { currency: 'E£', starter: '310', pro: '770', business: '3,000' },
-            'CM': { currency: 'CFA', starter: '6,000', pro: '15,000', business: '60,000' },
-            'DEFAULT': { currency: '$', starter: '10', pro: '25', business: '99' }
-        };
-
-        const africanCountries = ['NG', 'GH', 'KE', 'ZA', 'EG', 'CM', 'ET', 'MA', 'DZ', 'SD', 'UG', 'TN', 'AO', 'CI', 'SN', 'LY', 'CD', 'MW', 'ZM', 'TZ'];
-
-        async function fetchAndApplyPricing() {
-            try {
-                const response = await fetch('https://ipapi.co/json/');
-                const data = await response.json();
-                const country = data.country_code;
-
-                let set = pricingData[country];
-
-                // If in Africa but not in our explicit map, use a generic conversion or default
-                if (!set && africanCountries.includes(country)) {
-                    // Just fallback to USD for now if not in the main African tiers
-                    set = pricingData['DEFAULT'];
-                }
-
-                if (!set) set = pricingData['DEFAULT'];
-
-                updatePricingDisplay(set, country);
-            } catch (error) {
-                console.error("Location detection failed", error);
-                updatePricingDisplay(pricingData['DEFAULT'], 'US');
-            }
-        }
-
-        function updatePricingDisplay(set, country) {
-            document.getElementById('starter-price').innerHTML = `${set.currency}${set.starter}<span class="plan-period">/month</span>`;
-            document.getElementById('pro-price').innerHTML = `${set.currency}${set.pro}<span class="plan-period">/month</span>`;
-            document.getElementById('business-price').innerHTML = `${set.currency}${set.business}<span class="plan-period">/month</span>`;
-
-            // Update links with location context
-            const links = ['starter', 'pro', 'business'];
-            links.forEach(l => {
-                const el = document.getElementById(`${l}-link`);
-                const base = el.getAttribute('href');
-                el.setAttribute('href', `${base}?currency=${set.currency}&amount=${set[l]}&country=${country}`);
+            .catch(() => {
+                Swal.fire({ icon: 'error', title: 'Network Error', text: 'Please check your connection and try again.' });
             });
         }
 
-        document.addEventListener('DOMContentLoaded', fetchAndApplyPricing);
+        // ── FAQ Toggle ────────────────────────────────────────────
+        function toggleFaq(el) {
+            el.classList.toggle('open');
+            el.nextElementSibling.classList.toggle('open');
+        }
+
+        // ── Location-Aware Pricing ────────────────────────────────
+        const pricingData = {
+            'NG': { curr: '₦', starter: '19,000', pro: '75,000', biz: '150,000' },
+            'GH': { curr: 'GH₵', starter: '220', pro: '780', biz: '1,550' },
+            'KE': { curr: 'KSh', starter: '2,200', pro: '7,800', biz: '15,500' },
+            'ZA': { curr: 'R', starter: '270', pro: '950', biz: '1,900' },
+            'EG': { curr: 'E£', starter: '680', pro: '2,400', biz: '4,800' },
+            'CM': { curr: 'CFA', starter: '8,500', pro: '30,000', biz: '60,000' },
+            'DEFAULT': { curr: '$', starter: '13.99', pro: '49.99', biz: '99.99' }
+        };
+
+        async function applyLocationPricing() {
+            try {
+                const r = await fetch('https://ipapi.co/json/');
+                const d = await r.json();
+                const set = pricingData[d.country_code] || pricingData['DEFAULT'];
+
+                document.getElementById('starter-curr').textContent = set.curr;
+                document.getElementById('starter-amount').textContent = set.starter;
+                document.getElementById('pro-curr').textContent = set.curr;
+                document.getElementById('pro-amount').textContent = set.pro;
+                document.getElementById('biz-curr').textContent = set.curr;
+                document.getElementById('biz-amount').textContent = set.biz;
+
+                // Update manual links with local currency context
+                const base = window.location.origin;
+                const sl = document.getElementById('starter-manual-link');
+                const pl = document.getElementById('pro-manual-link');
+                const bl = document.getElementById('biz-manual-link');
+                if (sl) sl.href = `/plan/starter?currency=${set.curr}&amount=${set.starter}&country=${d.country_code}`;
+                if (pl) pl.href = `/plan/pro?currency=${set.curr}&amount=${set.pro}&country=${d.country_code}`;
+                if (bl) bl.href = `/plan/business?currency=${set.curr}&amount=${set.biz}&country=${d.country_code}`;
+
+            } catch (e) {
+                // leave defaults as-is
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', applyLocationPricing);
     </script>
 </body>
 

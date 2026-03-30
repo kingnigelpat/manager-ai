@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const languageInput = document.getElementById('language-input');
     const locationInput = document.getElementById('location-input');
     const peopleInput = document.getElementById('people-input');
+    const durationInput = document.getElementById('duration-input');
     const viralLinkInput = document.getElementById('viral-link');
     const competitorHandleInput = document.getElementById('competitor-handle');
     const competitorNicheInput = document.getElementById('competitor-niche');
@@ -172,10 +173,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Plan-to-tool requirements map
+    const planRequired = { free: 0, starter: 1, pro: 2, business: 3 };
+    const userPlanLevel = planRequired[window.PLAN_TYPE] || 0;
+
     // Tool Switching Logic
     toolTabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const tool = tab.dataset.tool;
+            const requires = tab.dataset.requires || 'free';
+            const requiredLevel = planRequired[requires] || 0;
+
+            // ── Locked Tool — show upgrade modal ──
+            if (tab.classList.contains('locked') || requiredLevel > userPlanLevel) {
+                const planNames = { starter: 'Starter', pro: 'Pro', business: 'Business' };
+                const targetPlan = planNames[requires] || requires;
+                Swal.fire({
+                    icon: 'warning',
+                    title: `🔒 ${targetPlan} Plan Required`,
+                    text: `The ${tool.replace('_', ' ')} tool is available on the ${targetPlan} plan and above.`,
+                    showCancelButton: true,
+                    confirmButtonText: `Upgrade to ${targetPlan}`,
+                    cancelButtonText: 'Maybe Later',
+                    confirmButtonColor: '#D4AF37',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)'
+                }).then(res => { if (res.isConfirmed) window.location.href = '/pricing'; });
+                return; // Don't switch tool
+            }
+
+            // ── Free trial used — block re-generation ──
+            if (window.FREE_TRIAL_USED && !window.IS_SUBSCRIBED) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Free Trial Used ⏰',
+                    text: 'Your one free strategy has been used. Upgrade to keep generating every day!',
+                    showCancelButton: true,
+                    confirmButtonText: 'See Plans',
+                    cancelButtonText: 'Close',
+                    confirmButtonColor: '#D4AF37',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)'
+                }).then(res => { if (res.isConfirmed) window.location.href = '/pricing'; });
+                return;
+            }
+
             currentTool = tool;
 
             // UI Feedback
@@ -191,22 +233,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('mood-group').classList.toggle('hidden', isWeekly);
                 document.getElementById('goal-group').classList.toggle('hidden', isWeekly);
                 document.getElementById('people-group').classList.toggle('hidden', isWeekly);
+                const durationGroup = document.getElementById('duration-group');
+                if (durationGroup) durationGroup.classList.toggle('hidden', !isWeekly);
             } else if (tool === 'viral_analyzer') {
                 document.getElementById('form-viral').classList.remove('hidden');
             } else if (tool === 'competitor_scanner') {
                 document.getElementById('form-competitor').classList.remove('hidden');
             } else if (tool === 'content_scorer') {
                 document.getElementById('form-scorer').classList.remove('hidden');
+            } else if (tool === 'hashtags') {
+                document.getElementById('form-hashtags').classList.remove('hidden');
             }
 
             // Update Hero Text
             const toolMap = {
-                'idea': { h: 'Post Idea Generator', p: 'Find the perfect viral angle for your business.' },
-                'script': { h: 'AI Script Writer', p: 'Turn ideas into high-converting video scripts.' },
+                'idea': { h: 'Ideas & Hooks Generator', p: 'Find the perfect viral angle, ideas and engaging hooks for your platform.' },
+                'script': { h: 'Script, Captions & Hashtags', p: 'Turn ideas into complete video scripts, post specific captions and relevant hashtags.' },
                 'viral_analyzer': { h: 'Viral Video Analyzer', p: 'Break down why that video went viral.' },
                 'competitor_scanner': { h: 'Competitor Scanner', p: 'Reverse engineer your competitors strategy.' },
                 'content_scorer': { h: 'Content Score Engine', p: 'Score your content before you post it.' },
-                'weekly_plan': { h: 'Weekly Roadmap', p: 'Get a full 7-day strategic content calendar.' }
+                'weekly_plan': { h: 'Strategic Content Planner', p: 'Get a full structured content calendar with hooks and hashtags tailored for your business type.' },
+                'hashtags': { h: 'Hashtag Generator', p: 'Get the perfect set of hashtags for your post — niche, trending, or mixed.' }
             };
             heroTitle.innerText = toolMap[tool].h;
             heroDesc.innerText = toolMap[tool].p;
@@ -270,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 goal: goalInput.value,
                 people: peopleInput.value,
                 language: languageInput.value,
+                duration: durationInput ? durationInput.value : 7,
                 ...payload
             })
         })
@@ -280,16 +328,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.error === "LIMIT_REACHED") {
                         Swal.fire({
                             icon: 'info',
-                            title: 'Limit Reached',
+                            title: '⏰ Limit Reached',
                             text: data.message,
                             showCancelButton: true,
-                            confirmButtonText: 'Upgrade Now',
-                            confirmButtonColor: '#f59e0b'
+                            confirmButtonText: 'Upgrade Now 👑',
+                            cancelButtonText: 'Close',
+                            confirmButtonColor: '#D4AF37',
+                            background: 'var(--card-bg)',
+                            color: 'var(--text-main)'
                         }).then((result) => { if (result.isConfirmed) window.location.href = '/pricing'; });
                     } else if (data.error === "UPGRADE_REQUIRED") {
-                        Swal.fire({ icon: 'warning', title: 'Upgrade Required', text: data.message });
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '🔒 Upgrade Required',
+                            text: data.message,
+                            showCancelButton: true,
+                            confirmButtonText: 'See Plans',
+                            cancelButtonText: 'Close',
+                            confirmButtonColor: '#D4AF37',
+                            background: 'var(--card-bg)',
+                            color: 'var(--text-main)'
+                        }).then((result) => { if (result.isConfirmed) window.location.href = '/pricing'; });
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Error', text: data.error });
+                        Swal.fire({ icon: 'error', title: 'Error', text: data.error, background: 'var(--card-bg)', color: 'var(--text-main)' });
                     }
                     throw new Error(data.error);
                 }
@@ -318,13 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (currentTool === 'viral_analyzer') {
                 if (!viralLinkInput.value.trim()) {
-                    Swal.fire({ icon: 'warning', title: 'Link Required', text: 'Paste a video link to analyze.' });
+                    Swal.fire({ icon: 'warning', title: 'Description Required', text: 'Describe the video to analyze.' });
                     return;
                 }
                 payload.link = viralLinkInput.value.trim();
             } else if (currentTool === 'competitor_scanner') {
                 if (!competitorHandleInput.value.trim()) {
-                    Swal.fire({ icon: 'warning', title: 'Handle Required', text: 'Enter a competitor handle or link.' });
+                    Swal.fire({ icon: 'warning', title: 'Name/Description Required', text: 'Enter a competitor name or description.' });
                     return;
                 }
                 payload.handle = competitorHandleInput.value.trim();
@@ -336,6 +397,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 payload.content = scoreContentInput.value.trim();
                 payload.contentType = scoreTypeInput.value;
+            } else if (currentTool === 'hashtags') {
+                const hashtagTopic = document.getElementById('hashtag-topic');
+                if (!hashtagTopic || !hashtagTopic.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'Topic Required', text: 'Tell us what the post is about.' });
+                    return;
+                }
+                payload.topic = hashtagTopic.value.trim();
+                payload.count = document.getElementById('hashtag-count').value;
+                payload.size = document.getElementById('hashtag-size').value;
             }
 
             mainGenerateBtn.disabled = true;

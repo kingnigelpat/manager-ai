@@ -3,25 +3,280 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Dashboard | Manager AI by Rae</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ef4444">
+    <meta name="theme-color" content="#D4AF37">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Manager AI">
+    <meta name="description" content="AI-powered social media strategy for your business.">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F5D060;
+            --gold-dim: rgba(212,175,55,0.12);
+            --gold-glow: rgba(212,175,55,0.25);
+        }
+
+        /* ── Plan Status Bar ── */
+        .plan-status-bar {
+            background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.04));
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 12px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .plan-status-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .plan-pill {
+            background: var(--gold-dim);
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .plan-pill.free {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.5);
+        }
+
+        .plan-pill.starter {
+            background: rgba(167,139,250,0.12);
+            border-color: rgba(167,139,250,0.25);
+            color: #a78bfa;
+        }
+
+        .plan-expiry {
+            font-size: 0.76rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .plan-expiry .expiry-warn { color: #fbbf24; }
+
+        .plan-upgrade-link {
+            font-size: 0.78rem;
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+
+        .plan-upgrade-link:hover { opacity: 0.8; }
+
+        /* ── Free Trial Banner ── */
+        .free-trial-banner {
+            background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03));
+            border: 1px dashed rgba(212,175,55,0.35);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .free-trial-banner .ftb-icon {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .free-trial-banner .ftb-text h4 {
+            margin: 0 0 4px;
+            font-size: 0.92rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .free-trial-banner .ftb-text p {
+            margin: 0;
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.45;
+        }
+
+        /* ── Trial Used Banner ── */
+        .trial-used-banner {
+            background: rgba(251,191,36,0.07);
+            border: 1px solid rgba(251,191,36,0.25);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .trial-used-banner .tub-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trial-used-banner .tub-icon {
+            font-size: 1.3rem;
+        }
+
+        .trial-used-banner p {
+            margin: 0;
+            font-size: 0.84rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .trial-used-banner strong { color: #fbbf24; }
+
+        /* ── Sidebar Tool Tab Locked State ── */
+        .tool-tab.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .tool-tab .lock-icon {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-left: auto;
+            color: var(--gold);
+        }
+
+        .tool-tab.locked:hover {
+            background: transparent;
+            border-color: transparent;
+            color: var(--text-soft);
+        }
+
+        /* ── Locked tool overlay in results ── */
+        .locked-tool-msg {
+            background: rgba(212,175,55,0.06);
+            border: 1px dashed rgba(212,175,55,0.25);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .locked-tool-msg .ltm-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .locked-tool-msg h3 {
+            margin: 0 0 8px;
+            color: var(--gold);
+            font-size: 1rem;
+        }
+
+        .locked-tool-msg p {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.86rem;
+            margin: 0 0 18px;
+        }
+
+        /* ── Daily limit indicator ── */
+        .daily-limit-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 0.8rem;
+        }
+
+        .dli-label { color: rgba(255,255,255,0.4); }
+
+        .dli-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dli-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .dli-dot.used { background: var(--gold); }
+        .dli-dot.used-all { background: rgba(255,95,109,0.8); }
+
+        /* ── Pro Tools Row (mobile) ── */
+        @media (max-width: 600px) {
+            .pro-tools-row {
+                grid-template-columns: 1fr;
+            }
+            .plan-status-bar {
+                gap: 8px;
+            }
+            .free-trial-banner {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        /* ── Upgrade CTA (in locked content) ── */
+        .upgrade-cta-btn {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s;
+        }
+
+        .upgrade-cta-btn:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px var(--gold-glow);
+        }
+    </style>
 </head>
 
 <body>
@@ -31,8 +286,6 @@
         <div class="loader-orbit"></div>
         <div class="loading-text" style="margin-top: 20px; font-weight: 500;">Generating Your Strategy...</div>
     </div>
-
-    <!-- Removed Subscription Modal since we have a dedicated pricing page now -->
 
     <div class="app-layout">
         <aside class="sidebar" id="sidebar">
@@ -45,26 +298,63 @@
             </div>
 
             <div class="sidebar-content">
-                <!-- Tool Picker (Moved to Sidebar) -->
+                <!-- Plan Badge in Sidebar -->
+                <div style="padding: 12px 16px 0;">
+                    {% if plan_type == 'business' %}
+                    <div class="plan-pill" style="justify-content: center; width: 100%; margin-bottom: 8px;">
+                        <i class="fa-solid fa-trophy" style="font-size: 0.7rem;"></i> Business Plan
+                    </div>
+                    {% elif plan_type == 'pro' %}
+                    <div class="plan-pill" style="justify-content: center; width: 100%; margin-bottom: 8px; background:rgba(212,175,55,0.08); border-color:rgba(212,175,55,0.2); color:var(--gold);">
+                        <i class="fa-solid fa-crown" style="font-size: 0.7rem;"></i> Pro Plan
+                    </div>
+                    {% elif plan_type == 'starter' %}
+                    <div class="plan-pill starter" style="justify-content: center; width: 100%; margin-bottom: 8px;">
+                        <i class="fa-solid fa-rocket" style="font-size: 0.7rem;"></i> Starter Plan
+                    </div>
+                    {% else %}
+                    <div class="plan-pill free" style="justify-content: center; width: 100%; margin-bottom: 8px;">
+                        <i class="fa-solid fa-gift" style="font-size: 0.7rem;"></i> Free Plan
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tool Picker -->
                 <section class="tool-picker">
                     <div class="tool-tabs" id="tool-tabs">
-                        <button class="tool-tab active" data-tool="idea">
-                            <i class="fa-solid fa-lightbulb"></i> <span class="tab-label">Idea</span>
+                        <button class="tool-tab active" data-tool="idea" data-requires="free">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            <span class="tab-label">Idea &amp; Hooks</span>
                         </button>
-                        <button class="tool-tab" data-tool="script">
-                            <i class="fa-solid fa-scroll"></i> <span class="tab-label">Script</span>
+                        <button class="tool-tab {% if plan_type not in ['starter','pro','business'] %}locked{% endif %}" data-tool="script" data-requires="starter">
+                            <i class="fa-solid fa-scroll"></i>
+                            <span class="tab-label">Script &amp; Captions</span>
+                            {% if plan_type not in ['starter','pro','business'] %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
                         </button>
-                        <button class="tool-tab" data-tool="viral_analyzer">
-                            <i class="fa-solid fa-magnifying-glass-chart"></i> <span class="tab-label">Viral</span>
+                        <button class="tool-tab {% if plan_type not in ['starter','pro','business'] %}locked{% endif %}" data-tool="weekly_plan" data-requires="starter">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <span class="tab-label">Content Plan</span>
+                            {% if plan_type not in ['starter','pro','business'] %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
                         </button>
-                        <button class="tool-tab" data-tool="competitor_scanner">
-                            <i class="fa-solid fa-user-secret"></i> <span class="tab-label">Competitor</span>
+                        <button class="tool-tab {% if plan_type not in ['starter','pro','business'] %}locked{% endif %}" data-tool="hashtags" data-requires="starter">
+                            <i class="fa-solid fa-hashtag"></i>
+                            <span class="tab-label">Hashtags</span>
+                            {% if plan_type not in ['starter','pro','business'] %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
                         </button>
-                        <button class="tool-tab" data-tool="content_scorer">
-                            <i class="fa-solid fa-gauge-high"></i> <span class="tab-label">Scorer</span>
+                        <button class="tool-tab {% if plan_type not in ['pro','business'] %}locked{% endif %}" data-tool="viral_analyzer" data-requires="pro">
+                            <i class="fa-solid fa-fire"></i>
+                            <span class="tab-label">Viral Analyzer</span>
+                            {% if plan_type not in ['pro','business'] %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
                         </button>
-                        <button class="tool-tab" data-tool="weekly_plan">
-                            <i class="fa-solid fa-calendar-days"></i> <span class="tab-label">Roadmap</span>
+                        <button class="tool-tab {% if plan_type not in ['pro','business'] %}locked{% endif %}" data-tool="content_scorer" data-requires="pro">
+                            <i class="fa-solid fa-star-half-stroke"></i>
+                            <span class="tab-label">Content Scorer</span>
+                            {% if plan_type not in ['pro','business'] %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
+                        </button>
+                        <button class="tool-tab {% if plan_type != 'business' %}locked{% endif %}" data-tool="competitor_scanner" data-requires="business">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <span class="tab-label">Competitor Scanner</span>
+                            {% if plan_type != 'business' %}<i class="fa-solid fa-lock lock-icon"></i>{% endif %}
                         </button>
                     </div>
                 </section>
@@ -106,38 +396,89 @@
                     </button>
 
                     {% if is_subscribed %}
-                    <a href="{{ url_for('pricing') }}" class="upgrade-container">
-                        <div class="user-badge premium-glow" style="border-color: #f59e0b; color: #f59e0b;">
-                            <i class="fa-solid fa-crown"></i>
-                            <span class="hide-mobile">{{ plan_type|capitalize }} Plan</span>
+                    <a href="{{ url_for('pricing') }}" class="upgrade-container" title="Manage Plan">
+                        {% if plan_type == 'business' %}
+                        <div class="plan-pill" style="border-color:var(--gold); color:var(--gold); background:var(--gold-dim);">
+                            <i class="fa-solid fa-trophy" style="font-size:0.65rem;"></i>
+                            <span class="hide-mobile">Business</span>
                         </div>
+                        {% elif plan_type == 'pro' %}
+                        <div class="plan-pill" style="border-color:var(--gold); color:var(--gold); background:var(--gold-dim);">
+                            <i class="fa-solid fa-crown" style="font-size:0.65rem;"></i>
+                            <span class="hide-mobile">Pro</span>
+                        </div>
+                        {% else %}
+                        <div class="plan-pill starter">
+                            <i class="fa-solid fa-rocket" style="font-size:0.65rem;"></i>
+                            <span class="hide-mobile">Starter</span>
+                        </div>
+                        {% endif %}
                     </a>
                     {% else %}
-                    <a href="{{ url_for('pricing') }}" class="primary-btn upgrade-btn">
-                        <i class="fa-solid fa-rocket"></i> <span class="hide-mobile">Upgrade</span>
+                    <a href="{{ url_for('pricing') }}" class="primary-btn upgrade-btn" style="padding:9px 16px; font-size:0.85rem; background:var(--gold); color:#000;">
+                        <i class="fa-solid fa-crown"></i>
+                        <span class="hide-mobile">Upgrade</span>
                     </a>
                     {% endif %}
                 </div>
             </header>
 
             <div class="container" id="main-app">
-                <!-- Tool Picker moved to sidebar -->
 
+                <!-- ── Plan Status / Expiry Notice ── -->
+                {% if is_subscribed and subscription_end %}
+                <div class="plan-status-bar">
+                    <div class="plan-status-left">
+                        <div class="plan-pill {% if plan_type=='starter' %}starter{% endif %}">
+                            {% if plan_type == 'business' %}<i class="fa-solid fa-trophy" style="font-size:0.7rem;"></i> Business
+                            {% elif plan_type == 'pro' %}<i class="fa-solid fa-crown" style="font-size:0.7rem;"></i> Pro
+                            {% else %}<i class="fa-solid fa-rocket" style="font-size:0.7rem;"></i> Starter{% endif %}
+                        </div>
+                        <span class="plan-expiry">Renews <strong>{{ subscription_end }}</strong></span>
+                    </div>
+                    <a href="{{ url_for('pricing') }}" class="plan-upgrade-link">
+                        <i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade
+                    </a>
+                </div>
+
+                {% elif not is_subscribed and not free_trial_used %}
+                <!-- First-time user — show free trial banner -->
+                <div class="free-trial-banner">
+                    <div class="ftb-icon">🎁</div>
+                    <div class="ftb-text">
+                        <h4>You have 1 FREE Business-Class Strategy!</h4>
+                        <p>Fill in your business details below and hit Generate — you'll receive a full professional AI strategy, completely free. One per account, no card needed.</p>
+                    </div>
+                </div>
+
+                {% elif not is_subscribed and free_trial_used %}
+                <!-- Free trial used — show upgrade prompt -->
+                <div class="trial-used-banner">
+                    <div class="tub-left">
+                        <span class="tub-icon">⏰</span>
+                        <p>Your <strong>free trial was used</strong>. Upgrade to keep generating strategies every day.</p>
+                    </div>
+                    <a href="{{ url_for('pricing') }}" class="upgrade-cta-btn">
+                        <i class="fa-solid fa-crown"></i> Upgrade Now
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- ── Input Section ── -->
                 <section class="input-section">
                     <div class="hero-text" id="tool-hero">
-                        <h1>Post Idea Generator</h1>
-                        <p>Find the perfect viral angle for your business.</p>
+                        <h1>Ideas &amp; Hooks Generator</h1>
+                        <p>Find the perfect viral angle, hooks and ideas for your business.</p>
                     </div>
 
-                    <!-- Settings shared across all tools -->
+                    <!-- Shared config fields -->
                     <div class="config-core">
                         <div class="form-grid">
                             <div class="form-group full-width">
                                 <label for="business-input">My Business Type</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-briefcase"></i>
-                                    <input type="text" id="business-input"
-                                        placeholder="e.g. Barber Shop, Fashion Brand">
+                                    <input type="text" id="business-input" placeholder="e.g. Barber Shop, Fashion Brand, Food Delivery">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -173,7 +514,7 @@
                         </div>
                     </div>
 
-                    <!-- Tool: Idea & Script (Specific Fields) -->
+                    <!-- Tool: Idea & Script -->
                     <div id="form-generative" class="tool-form">
                         <div class="form-grid">
                             <div class="form-group" id="mood-group">
@@ -184,6 +525,18 @@
                                     <option value="serious">Clean</option>
                                 </select>
                             </div>
+                            <div class="form-group hidden" id="duration-group">
+                                <label for="duration-input">Plan Duration</label>
+                                <select id="duration-input">
+                                    <option value="7">1 Week</option>
+                                    {% if plan_type in ['pro', 'business'] %}
+                                    <option value="14">2 Weeks (Pro+)</option>
+                                    {% endif %}
+                                    {% if plan_type == 'business' %}
+                                    <option value="30">1 Month (Business)</option>
+                                    {% endif %}
+                                </select>
+                            </div>
                             <div class="form-group" id="goal-group">
                                 <label for="goal-input">Goal</label>
                                 <select id="goal-input">
@@ -192,7 +545,7 @@
                                 </select>
                             </div>
                             <div class="form-group full-width" id="people-group">
-                                <label for="people-input">Talent (Who is in video?)</label>
+                                <label for="people-input">Who's in the video?</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-users"></i>
                                     <select id="people-input">
@@ -207,90 +560,143 @@
 
                     <!-- Tool: Viral Analyzer -->
                     <div id="form-viral" class="tool-form hidden">
-                        <div class="form-group full-width">
-                            <label for="viral-link">Video Link (Reel/TikTok/YouTube)</label>
+                        <div class="form-group">
+                            <label for="viral-link">Describe the video (or paste context)</label>
                             <div class="input-wrapper">
-                                <i class="fa-solid fa-link"></i>
-                                <input type="text" id="viral-link" placeholder="Paste link here...">
+                                <i class="fa-solid fa-fire-flame-curved"></i>
+                                <input type="text" id="viral-link" placeholder="Describe what happens in the video...">
                             </div>
                         </div>
                     </div>
 
                     <!-- Tool: Competitor Scanner -->
                     <div id="form-competitor" class="tool-form hidden">
-                        <div class="form-group full-width">
-                            <label for="competitor-handle">Competitor Username / Profile Link</label>
-                            <div class="input-wrapper">
-                                <i class="fa-solid fa-at"></i>
-                                <input type="text" id="competitor-handle" placeholder="@nike or profile link">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="competitor-handle">Competitor Name or Handle</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-user-secret"></i>
+                                    <input type="text" id="competitor-handle" placeholder="e.g. Nike, @competitor_brand">
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="competitor-niche">Their Core Business (Optional)</label>
-                            <div class="input-wrapper">
-                                <i class="fa-solid fa-tag"></i>
-                                <input type="text" id="competitor-niche" placeholder="e.g. Luxury Footwear, Tech Blog">
+                            <div class="form-group full-width">
+                                <label for="competitor-niche">Their Industry / Niche</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-tag"></i>
+                                    <input type="text" id="competitor-niche" placeholder="e.g. Fitness, Fashion, Food">
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Tool: Content Scorer -->
                     <div id="form-scorer" class="tool-form hidden">
-                        <div class="form-group full-width">
-                            <label for="score-type">What are we scoring?</label>
-                            <select id="score-type" style="margin-bottom: 15px;">
-                                <option value="idea">Video Idea</option>
-                                <option value="caption">Post Caption</option>
+                        <div class="form-group">
+                            <label for="score-content">Paste your caption, hook, or script</label>
+                            <textarea id="score-content" rows="4" placeholder="Paste the content you want scored here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="score-type">Content Type</label>
+                            <select id="score-type">
+                                <option value="caption">Caption</option>
+                                <option value="hook">Hook</option>
                                 <option value="script">Full Script</option>
                             </select>
                         </div>
-                        <div class="form-group full-width">
-                            <label for="score-content">Paste your Content</label>
-                            <textarea id="score-content" placeholder="Paste here..."
-                                style="min-height: 120px;"></textarea>
+                    </div>
+
+                    <!-- Tool: Hashtags -->
+                    <div id="form-hashtags" class="tool-form hidden">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="hashtag-topic">What is your post about?</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                    <input type="text" id="hashtag-topic" placeholder="e.g. New shoe collection, Fitness challenge, Food review">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="hashtag-count">How many hashtags?</label>
+                                <select id="hashtag-count">
+                                    <option value="5">5 hashtags</option>
+                                    <option value="10" selected>10 hashtags</option>
+                                    <option value="15">15 hashtags</option>
+                                    <option value="30">30 hashtags</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="hashtag-size">Audience Size</label>
+                                <select id="hashtag-size">
+                                    <option value="mixed">Mixed (Best)</option>
+                                    <option value="small">Small (Niche)</option>
+                                    <option value="large">Large (Viral)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     <div class="action-area">
-                        <button id="main-generate-btn" class="primary-btn main-action">
-                            <i class="fa-solid fa-bolt"></i> Generate
+                        <button id="main-generate-btn" class="primary-btn main-action" style="background:var(--gold); color:#000; box-shadow: 0 8px 28px var(--gold-glow);">
+                            <i class="fa-solid fa-bolt"></i> Generate Strategy
                         </button>
                     </div>
 
+                    <!-- Daily limit indicator (subscribed users) -->
+                    {% if is_subscribed %}
+                    <div class="daily-limit-indicator" id="daily-limit-indicator" style="display:none;">
+                        <span class="dli-label">Today's prompts used</span>
+                        <div class="dli-dots" id="dli-dots"></div>
+                    </div>
+                    {% endif %}
+
                     {% if plan_type == 'business' %}
-                    <div class="brand-tone-section premium-card" id="brand-tone-block">
+                    <div class="brand-tone-section premium-card" id="brand-tone-block" style="margin-top:20px;">
                         <label for="brand-tone-input">
                             <i class="fa-solid fa-brain"></i> Brand Tone Memory:
                         </label>
-                        <textarea id="brand-tone-input"
-                            placeholder="Describe your brand's voice...">{{ brand_tone }}</textarea>
+                        <textarea id="brand-tone-input" placeholder="Describe your brand's voice (e.g. Bold, premium, witty — targets 18-35 Lagos professionals)...">{{ brand_tone }}</textarea>
                         <button id="save-tone-btn" class="secondary-btn small">Save Memory</button>
                     </div>
                     {% endif %}
 
                 </section>
 
+                <!-- ── Result Section ── -->
                 <section class="result-section hidden" id="result-section">
                     <div class="strategy-canvas">
                         <div class="canvas-header">
                             <h2><i class="fa-solid fa-chess-knight"></i> Generated Strategy</h2>
                             <div class="canvas-actions">
-                                <button id="copy-btn" class="icon-btn" title="Copy Content"><i
-                                        class="fa-solid fa-copy"></i></button>
+                                <button id="copy-btn" class="icon-btn" title="Copy Content"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
                         <div class="idea-box" id="idea-text"></div>
                     </div>
 
-                    <!-- Refinement Area -->
+                    <!-- Refinement (Pro+) -->
+                    {% if plan_type in ['pro', 'business'] %}
                     <div class="refinement-card">
-                        <h3><i class="fa-solid fa-screwdriver-wrench"></i> Refine Your Result</h3>
+                        <h3><i class="fa-solid fa-screwdriver-wrench"></i> Refine Your Result (Chat Bot)</h3>
                         <div class="refine-flex">
-                            <input type="text" id="refine-input"
-                                placeholder="e.g. Make it funnier, change the music...">
-                            <button id="refine-btn" class="primary-btn">Refine</button>
+                            <input type="text" id="refine-input" placeholder="Tell the AI how to tweak this: 'Make it funnier', 'Change the hook'...">
+                            <button id="refine-btn" class="primary-btn" style="background:var(--gold);color:#000;">Refine</button>
                         </div>
                     </div>
+                    {% elif plan_type == 'starter' %}
+                    <div class="locked-tool-msg">
+                        <span class="ltm-icon">🔒</span>
+                        <h3>AI Chat Refinement — Pro Feature</h3>
+                        <p>Upgrade to Pro to chat with the AI and refine any strategy in real time.</p>
+                        <a href="{{ url_for('pricing') }}" class="upgrade-cta-btn"><i class="fa-solid fa-crown"></i> Upgrade to Pro</a>
+                    </div>
+                    {% elif not is_subscribed %}
+                    <div class="locked-tool-msg">
+                        <span class="ltm-icon">🔒</span>
+                        <h3>Want to Refine This?</h3>
+                        <p>Upgrade to Pro or Business plan to chat with the AI and improve any result.</p>
+                        <a href="{{ url_for('pricing') }}" class="upgrade-cta-btn"><i class="fa-solid fa-crown"></i> See Plans</a>
+                    </div>
+                    {% endif %}
 
                     <div class="pro-tools-row">
                         {% if plan_type in ['pro', 'business'] %}
@@ -303,11 +709,9 @@
                         {% endif %}
                     </div>
                 </section>
-                </main>
             </div>
         </div>
     </div>
-
 
     <!-- Direct Instagram Support Float -->
     <div class="support-float-container">
@@ -324,22 +728,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Markdown Renderer -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <!-- PWA Service Worker Registration -->
+    <script src="{{ url_for('static', filename='script.js') }}?v=5"></script>
+
+    <!-- Template data for JS -->
+    <script>
+        window.PLAN_TYPE = "{{ plan_type }}";
+        window.IS_SUBSCRIBED = ("{{ '1' if is_subscribed else '0' }}" === "1");
+        window.FREE_TRIAL_USED = ("{{ '1' if free_trial_used else '0' }}" === "1");
+    </script>
+
+    <!-- PWA Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register("/sw.js")
-                    .then(reg => {
-                        console.log('Service Worker registered');
-                        // Force update registration to ensure the prompt fires correctly
-                        reg.update();
-                    })
-                    .catch(err => console.log('Service Worker registration failed', err));
+                    .then(reg => { reg.update(); })
+                    .catch(err => console.log('SW registration failed', err));
             });
         }
     </script>

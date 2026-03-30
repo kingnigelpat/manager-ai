@@ -4,52 +4,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login | The Manager AI</title>
+    <title>Admin Login | Manager AI</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='rae_logo.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .auth-container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-    </style>
 </head>
 
 <body>
     <div class="container auth-container">
-        <header>
-            <div class="logo" style="margin: 0 auto;">
-                <div class="logo-icon"><i class="fa-solid fa-lock"></i></div>
-                <span class="logo-text">Admin Access</span>
-            </div>
-        </header>
+        <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
+            <img src="{{ url_for('static', filename='rae_logo.png') }}" class="rae-logo" alt="Rae">
+            <span class="logo-text">Manager AI <small style="font-size: 0.6em; opacity: 0.7; font-weight: 400;">by
+                    Rae</small></span>
+        </div>
+
+        <div class="hero-text" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Admin Access</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Enter your PIN to manage the platform</p>
+        </div>
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <div class="flash-message flash-error">
             {% for message in messages %}
-            {{ message }}
+            <div class="flash-message flash-error">
+                <p style="margin: 0;">{{ message }}</p>
+            </div>
             {% endfor %}
-        </div>
         {% endif %}
         {% endwith %}
 
         <form action="{{ url_for('admin_login') }}" method="POST">
             <div class="form-group">
-                <label for="pin">Enter Admin PIN</label>
+                <label for="pin">Admin PIN</label>
                 <input type="password" id="pin" name="pin" placeholder="Enter PIN code" required
-                    style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;">
+                    style="text-align: center; letter-spacing: 5px; font-size: 1.2rem; font-family: monospace;">
             </div>
 
-            <button type="submit" class="glow-btn">Verify</button>
+            <button type="submit" class="primary-btn" style="width: 100%; margin-top: 10px;">
+                Verify <i class="fa-solid fa-shield-halved" style="margin-left: 8px;"></i>
+            </button>
         </form>
 
         <div class="auth-footer">
-            <a href="{{ url_for('dashboard') }}" class="secondary-btn" style="background: transparent; border: none;">Go
-                to Dashboard</a>
+            <a href="{{ url_for('dashboard') }}" class="secondary-btn" style="background: transparent; border: none; font-size: 0.9rem;">
+                <i class="fa-solid fa-arrow-left" style="margin-right: 5px;"></i> Go to Dashboard
+            </a>
         </div>
     </div>
 </body>

@@ -17,7 +17,7 @@ import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from flask_talisman import Talisman
 from dotenv import load_dotenv
 
@@ -177,6 +177,13 @@ def init_db():
         except Exception as e:
             print(f"Migration warning (users - subscription_start): {e}")
 
+    # subscription_end: when the paid plan expires (auto-revokes access)
+    if 'subscription_end' not in user_columns:
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN subscription_end DATETIME")
+        except Exception as e:
+            print(f"Migration warning (users - subscription_end): {e}")
+
     if 'plan_type' not in user_columns:
         try:
             c.execute("ALTER TABLE users ADD COLUMN plan_type TEXT DEFAULT 'free'")
@@ -188,6 +195,13 @@ def init_db():
             c.execute("ALTER TABLE users ADD COLUMN brand_tone TEXT")
         except Exception as e:
             print(f"Migration warning (users - brand_tone): {e}")
+
+    # free_trial_used_at: records timestamp of the one-time free prompt
+    if 'free_trial_used_at' not in user_columns:
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN free_trial_used_at DATETIME")
+        except Exception as e:
+            print(f"Migration warning (users - free_trial_used_at): {e}")
 
     # Table for preferred payment requests (Can't pay with bank)
     c.execute('''CREATE TABLE IF NOT EXISTS payment_requests
@@ -221,6 +235,54 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def check_and_enforce_subscription(user_id, conn):
+    """
+    Checks if a paid subscription has expired (subscription_end vs now UTC).
+    If expired, auto-downgrades user to 'free' in DB.
+    Returns: (is_subscribed, plan_type, subscription_end_str, free_trial_used_at, is_admin)
+    """
+    c = conn.cursor()
+    c.execute(
+        "SELECT is_subscribed, plan_type, subscription_end, free_trial_used_at, is_admin FROM users WHERE id = ?",
+        (user_id,)
+    )
+    row = c.fetchone()
+    if not row:
+        return False, 'free', None, None, False
+
+    is_subscribed    = bool(row[0])
+    plan_type        = row[1] or 'free'
+    subscription_end = row[2]
+    free_trial_used  = row[3]
+    is_admin         = bool(row[4])
+
+    # Admins bypass all expiry checks
+    if is_admin:
+        return True, 'business', subscription_end, free_trial_used, True
+
+    # If subscription_end is set and has passed, downgrade now
+    if is_subscribed and subscription_end:
+        try:
+            end_dt = datetime.fromisoformat(str(subscription_end))
+            if end_dt.tzinfo is None:
+                end_dt = end_dt.replace(tzinfo=timezone.utc)
+            now_utc = datetime.now(timezone.utc)
+            if now_utc > end_dt:
+                c.execute(
+                    "UPDATE users SET is_subscribed=0, plan_type='free', subscription_end=NULL WHERE id=?",
+                    (user_id,)
+                )
+                conn.commit()
+                is_subscribed    = False
+                plan_type        = 'free'
+                subscription_end = None
+        except Exception as e:
+            print(f"Expiry check error: {e}")
+
+    return is_subscribed, plan_type, subscription_end, free_trial_used, is_admin
+
 
 from openai import OpenAI
 # load_dotenv() moved to top
@@ -389,13 +451,17 @@ class AI_Engine:
             return f"A {mood} video showcasing your {business_type} to help {goal}. (Backup: AI service temporarily unavailable)"
 
     def analyze_viral(self, link, platform, language):
-        system_prompt = "You are a Viral Content Analyst. Break down why a specific video link went viral based on the content description or platform context provided."
+        system_prompt = "You are a Viral Content Analyst. Break down why a specific video went viral based on the content description provided."
         user_prompt = f"""
         Analyzing a video from {platform}. 
-        Link provided: {link}
+        User Input (Video Description or Link): {link}
         
-        TASK: Synthesize a viral breakdown based on the platform current trends for this type of link.
+        TASK: Synthesize a viral breakdown based on the platform's current trends.
         
+        CRITICAL INSTRUCTION: As an AI, you cannot click or view internet links. If the user ONLY provided a URL (like https://tiktok.com/... or a plain link) without describing the video, DO NOT GUESS or HALLUCINATE what the video is about. Instead, reply EXACTLY with:
+        "I cannot watch videos directly from links. Please describe what happens in the video (e.g., 'A 10-second reel of a barista pouring latte art'), and I will give you a viral breakdown."
+        
+        If they provided a description, give the breakdown:
         FORMAT (Markdown):
         ### 🧪 VIRAL BREAKDOWN
         - **Hook used:** [Analysis]
@@ -433,16 +499,20 @@ class AI_Engine:
 
         user_prompt = f"""
         {user_context}
-        Competitor to Scan: {competitor_handle}
+        Competitor Input provided by user: {competitor_handle}
         Competitor Industry/Niche: {competitor_niche or 'General ' + platform}
         Platform: {platform}
         
         TASK:
         Perform a Deep Strategic Audit of this competitor. Identify their 'Winning Formula' but more importantly, identify their 'Blind Spots'.
         
+        CRITICAL INSTRUCTION: As an AI, you cannot click or view internet links. If the user ONLY provided a URL and you don't recognize the competitor by name from your training data, DO NOT HALLUCINATE their content. Instead, reply EXACTLY with:
+        "I cannot browse links directly or analyze unknown accounts from just a URL. Please provide a brief description of what this competitor usually posts, and I will generate a strategic attack plan."
+        
+        If you recognize the brand (e.g., Nike) or if the user provided a description, proceed with the audit:
         Format your answer using Markdown with clear headers (###):
 
-        ### � COMPETITOR STRATEGY INSIGHT
+        ### 🕵️ COMPETITOR STRATEGY INSIGHT
         * **Content Pillars:** (What 3 themes do they post most?)
         * **The 'Secret Sauce':** (Why do people actually follow them? Is it status, humor, or value?)
         * **Engagement Loop:** (How do they get people to comment/share?)
@@ -477,6 +547,10 @@ class AI_Engine:
         Content to Score ({content_type}): "{content_body}"
         Platform: {platform}
         
+        CRITICAL INSTRUCTION: If the content provided is JUST A URL/LINK, you must decline to score it. Reply EXACTLY with:
+        "I cannot access external links. Please paste the actual text, caption, or script you want me to score."
+        
+        If the actual text/content is provided, proceed with the scorecard:
         FORMAT (Markdown):
         ### 📊 CONTENT SCORECARD
         - **Hook Strength:** X/10
@@ -501,25 +575,26 @@ class AI_Engine:
         except Exception as e:
             return "Unable to score content right now."
 
-    def generate_weekly_plan(self, business_type, platform, language, location=None, brand_tone=None):
+    def generate_weekly_plan(self, business_type, platform, language, location=None, brand_tone=None, duration=7):
         lang_instruction = "Use simple English."
         if language == 'pidgin':
             lang_instruction = "Use Naija Pidgin Style."
         elif language == 'standard':
             lang_instruction = "Use Standard Professional English."
 
-        system_prompt = f"You are a Senior Strategic Planner. Create a 7-day social media roadmap. Target Location: {location or 'Global'}. {lang_instruction}"
+        system_prompt = f"You are a Senior Strategic Planner. Create a {duration}-day social media roadmap. Target Location: {location or 'Global'}. {lang_instruction}"
         if brand_tone:
             system_prompt += f" Brand Voice Guide: {brand_tone}"
 
         user_prompt = f"""
-    Create a 7-day content plan for a {business_type} on {platform} targeting an audience in {location or 'a Global market'}. 
+    Create a {duration}-day content plan for a {business_type} on {platform} targeting an audience in {location or 'a Global market'}. 
     
     FORMAT REQUIREMENT:
-    Return a Markdown TABLE with headers: | Day | Content Type | The Big Idea | Why it works |
+    Return a Markdown TABLE with headers: | Day | Content Type | The Big Idea | Why it works | Hashtags |
     
     Make each day different (e.g. Tutorial, Behind the scenes, Educational, Promotion, etc.).
-    Under the table, add a brief 1-sentence strategic summary for the week.
+    Include relevant hashtags for each day!
+    Under the table, add a brief 1-sentence strategic summary for the period.
     """
         
         try:
@@ -532,7 +607,36 @@ class AI_Engine:
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            return "Unable to generate weekly plan right now."
+            return f"Unable to generate {duration}-day plan right now."
+
+    def generate_hashtags(self, topic, platform, count=10, size='mixed'):
+        size_guide = {
+            'small': 'Focus on niche, less competitive hashtags (under 500k posts). Good for discoverability.',
+            'large': 'Focus on large popular hashtags (1M+ posts). Good for viral reach.',
+            'mixed': 'Mix of small niche hashtags (under 500k), medium (500k-2M), and large popular ones (2M+). This is the most effective strategy.'
+        }
+        system_prompt = f"You are a hashtag strategy expert for {platform}. Generate exactly {count} hashtags. {size_guide.get(size, size_guide['mixed'])}"
+
+        user_prompt = f"""Generate exactly {count} hashtags for a {platform} post about: "{topic}"
+
+Rules:
+- Return ONLY the hashtags, one per line, each starting with #
+- No explanations, no categories, no numbering — just clean hashtags
+- Make them directly relevant to the topic
+- Mix popularity levels as instructed
+- Capitalise multi-word hashtags properly (e.g. #FashionTips not #fashiontips)"""
+
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.0-flash-001",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return "Unable to generate hashtags right now."
 
     def optimize_cta(self, current_content, platform, language, brand_tone=None):
         system_prompt = f"You are a Copywriting Expert. Your job is to rewrite the Call to Action (CTA) of a post to increase sales. Use {language}."
@@ -810,19 +914,36 @@ def logout():
 def dashboard():
     user_id = session['user_id']
     conn = sqlite3.connect(DB_NAME, timeout=10)
+    
+    # enforce expiry on page load
+    is_subscribed, plan_type, subscription_end, free_trial_used, is_admin = check_and_enforce_subscription(user_id, conn)
+    
     c = conn.cursor()
-    c.execute("SELECT plan_type, brand_tone FROM users WHERE id = ?", (user_id,))
+    c.execute("SELECT brand_tone FROM users WHERE id = ?", (user_id,))
     row = c.fetchone()
+    brand_tone = row[0] if row else ''
     conn.close()
     
-    plan_type = row[0] if row else 'free'
-    brand_tone = row[1] if row else ''
-    
-    return render_template('index.html', 
-                           username=session.get('username'), 
-                           is_subscribed=session.get('is_subscribed'),
+    # Force session sync
+    session['plan_type'] = plan_type
+    session['is_subscribed'] = is_subscribed
+
+    # Format expiry for display
+    sub_end_display = None
+    if subscription_end:
+        try:
+            end_dt = datetime.fromisoformat(str(subscription_end))
+            sub_end_display = end_dt.strftime('%B %d, %Y')
+        except: pass
+
+    return render_template('index.html',
+                           username=session.get('username'),
+                           is_subscribed=is_subscribed,
                            plan_type=plan_type,
-                           brand_tone=brand_tone)
+                           brand_tone=brand_tone or '',
+                           subscription_end=sub_end_display,
+                           free_trial_used=bool(free_trial_used))
+
 
 @app.route('/pricing')
 @login_required
@@ -837,9 +958,9 @@ def choose_plan(plan_name):
     
     # Mapping plan URL parts to display names and default prices
     plans = {
-        'starter': {'name': 'Starter Plan', 'price': '₦5,000'},
-        'pro': {'name': 'Pro Plan', 'price': '₦25,000'},
-        'business': {'name': 'Business Plan', 'price': '₦75,000'}
+        'starter': {'name': 'Starter Plan', 'price': '₦19,000'},
+        'pro': {'name': 'Pro Plan', 'price': '₦75,000'},
+        'business': {'name': 'Business Plan', 'price': '₦150,000'}
     }
     
     plan_info = plans.get(plan_name.lower())
@@ -859,9 +980,9 @@ def initialize_payment(plan_id):
         return jsonify({'error': 'Payment gateway not configured'}), 500
         
     plans = {
-        'starter': 500000,   # 5000 * 100 kobo
-        'pro': 2500000,      # 25000 * 100
-        'business': 7500000  # 75000 * 100
+        'starter': 1900000,   # 19000 * 100
+        'pro': 7500000,      # 75000 * 100
+        'business': 15000000  # 150000 * 100
     }
     
     amount = plans.get(plan_id.lower())
@@ -927,10 +1048,15 @@ def pay_callback():
             user_id = metadata['user_id']
             plan_id = metadata['plan_id']
             
-            # Update user plan in DB
+            # Update user plan in DB with 30-day expiry
+            now_utc = datetime.now(timezone.utc)
+            sub_end = (now_utc + timedelta(days=30)).isoformat()
             conn = sqlite3.connect(DB_NAME)
             c = conn.cursor()
-            c.execute("UPDATE users SET is_subscribed = 1, subscription_start = CURRENT_TIMESTAMP, plan_type = ? WHERE id = ?", (plan_id, user_id))
+            c.execute(
+                "UPDATE users SET is_subscribed=1, subscription_start=?, subscription_end=?, plan_type=? WHERE id=?",
+                (now_utc.isoformat(), sub_end, plan_id, user_id)
+            )
             conn.commit()
             conn.close()
             
@@ -940,7 +1066,7 @@ def pay_callback():
                 session['plan_type'] = plan_id
                 
             flash(f"Success! Your account has been upgraded to the {plan_id.capitalize()} plan.")
-            return render_template('payment_success.html') # Need to ensure this exists or use a generic one
+            return render_template('payment_success.html')
         else:
             flash("Payment verification failed.")
             return redirect(url_for('pricing'))
@@ -1050,18 +1176,57 @@ def approve_submission(submission_id):
         user_id = sub[0]
         plan_type = sub[1]
         c.execute("UPDATE submissions SET status = 'approved' WHERE id = ?", (submission_id,))
-        # Set is_subscribed = 1, set start date to now, and set the plan_type
-        c.execute("""UPDATE users 
-                     SET is_subscribed = 1, 
-                         subscription_start = CURRENT_TIMESTAMP, 
-                         plan_type = ? 
-                     WHERE id = ?""", (plan_type, user_id))
+        # Set subscription_end = 30 days from now in UTC
+        now_utc = datetime.now(timezone.utc)
+        sub_end = (now_utc + timedelta(days=30)).isoformat()
+        c.execute("""
+            UPDATE users
+            SET is_subscribed = 1,
+                subscription_start = ?,
+                subscription_end = ?,
+                plan_type = ?
+            WHERE id = ?
+        """, (now_utc.isoformat(), sub_end, plan_type, user_id))
         conn.commit()
-        flash(f'Submission {submission_id} approved and user {user_id} credited with {plan_type}.')
+        flash(f'Submission {submission_id} approved. User {user_id} credited with {plan_type} (expires {sub_end[:10]}).')
     else:
         flash('Submission not found.')
         
     conn.close()
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/change_plan/<int:user_id>', methods=['POST'])
+@admin_required
+def change_user_plan(user_id):
+    new_plan = request.form.get('new_plan', 'free')
+    duration_days = int(request.form.get('duration_days', 30))  # default 30 days
+    conn = sqlite3.connect(DB_NAME, timeout=10)
+    c = conn.cursor()
+    
+    now_utc = datetime.now(timezone.utc)
+    
+    if new_plan == 'free':
+        c.execute(
+            "UPDATE users SET is_subscribed = 0, plan_type = 'free', subscription_end = NULL, subscription_start = NULL WHERE id = ?",
+            (user_id,)
+        )
+    else:
+        sub_end = (now_utc + timedelta(days=duration_days)).isoformat()
+        c.execute(
+            "UPDATE users SET is_subscribed = 1, plan_type = ?, subscription_start = ?, subscription_end = ? WHERE id = ?",
+            (new_plan, now_utc.isoformat(), sub_end, user_id)
+        )
+        
+    conn.commit()
+    
+    # Sync current user session if the admin changes their own plan
+    if session.get('user_id') == user_id:
+        session['plan_type'] = new_plan
+        session['is_subscribed'] = new_plan != 'free'
+        
+    conn.close()
+    flash(f"User #{user_id} plan has been updated to {new_plan.capitalize()}.")
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/api/save_brand_tone', methods=['POST'])
@@ -1163,22 +1328,29 @@ def delete_user(user_id):
 
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
-    is_subscribed = session.get('is_subscribed', False)
-    
-    trial_used = False
-    if 'user_id' in session and not is_subscribed:
-        try:
-            conn = sqlite3.connect(DB_NAME, timeout=10)
-            c = conn.cursor()
-            c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ?", (session['user_id'],))
-            count = c.fetchone()[0]
-            conn.close()
-            if count >= 1:
-                trial_used = True
-        except Exception as e:
-            print(f"Error check_status: {e}")
-            
-    return jsonify({"subscribed": is_subscribed, "trial_used": trial_used})
+    if 'user_id' not in session:
+        return jsonify({"subscribed": False, "trial_used": False, "plan": "free"})
+
+    user_id = session['user_id']
+    conn = sqlite3.connect(DB_NAME, timeout=10)
+    try:
+        is_subscribed, plan_type, subscription_end, free_trial_used, is_admin = check_and_enforce_subscription(user_id, conn)
+        # Sync session
+        session['is_subscribed'] = is_subscribed
+        session['plan_type'] = plan_type
+        return jsonify({
+            "subscribed": is_subscribed,
+            "trial_used": bool(free_trial_used),
+            "plan": plan_type,
+            "subscription_end": subscription_end,
+            "is_admin": is_admin
+        })
+    except Exception as e:
+        print(f"Error check_status: {e}")
+        return jsonify({"subscribed": False, "trial_used": False, "plan": "free"})
+    finally:
+        conn.close()
+
 
 @app.route('/api/subscribe', methods=['POST'])
 @login_required
@@ -1190,40 +1362,62 @@ def subscribe():
 @limiter.limit("5 per minute")
 def generate_content():
     data = request.get_json(silent=True) or {}
-    mode = data.get('mode', 'idea') # 'idea', 'script', 'viral_analyzer', 'competitor_scanner', 'content_scorer', 'weekly_plan'
+    mode = data.get('mode', 'idea')  # 'idea', 'script', 'viral_analyzer', 'competitor_scanner', 'content_scorer', 'weekly_plan'
     
     user_id = session['user_id']
     conn = sqlite3.connect(DB_NAME, timeout=10)
     try:
         c = conn.cursor()
-        c.execute("SELECT is_subscribed, plan_type, brand_tone, is_admin FROM users WHERE id = ?", (user_id,))
-        user_info = c.fetchone()
-        is_subscribed = user_info[0]
-        plan_type = user_info[1] or 'free'
-        brand_tone = user_info[2]
-        is_admin = bool(user_info[3])
+        
+        # Enforce subscription expiry — auto-downgrades if expired
+        is_subscribed, plan_type, subscription_end, free_trial_used, is_admin = check_and_enforce_subscription(user_id, conn)
 
-        # Plan-based access control
-        allowed_free_starter = ['idea']
-        allowed_pro = ['idea', 'script', 'viral_analyzer', 'content_scorer', 'weekly_plan']
-        allowed_business = ['idea', 'script', 'viral_analyzer', 'competitor_scanner', 'content_scorer', 'weekly_plan']
+        c.execute("SELECT brand_tone FROM users WHERE id = ?", (user_id,))
+        row_bt = c.fetchone()
+        brand_tone = row_bt[0] if row_bt else None
 
-        current_allowed = allowed_free_starter
-        if plan_type == 'pro': current_allowed = allowed_pro
+        # ── Plan-based tool access control ──────────────────────────────────────
+        # Free: one lifetime business-class prompt (idea only)
+        # Starter: 3 ideas/day, 1-week plan, script, captions, hashtags
+        # Pro: 5 ideas/day, 2-week plan, script, viral analyzer, content scorer, hashtags
+        # Business: unlimited, 1-month plan, all tools including competitor scanner + brand tone
+        allowed_free     = ['idea']  # free gets the full idea experience, once
+        allowed_starter  = ['idea', 'script', 'weekly_plan', 'hashtags']
+        allowed_pro      = ['idea', 'script', 'viral_analyzer', 'content_scorer', 'weekly_plan', 'hashtags']
+        allowed_business = ['idea', 'script', 'viral_analyzer', 'competitor_scanner', 'content_scorer', 'weekly_plan', 'hashtags']
+
+        current_allowed = allowed_free
+        if plan_type == 'starter':  current_allowed = allowed_starter
+        elif plan_type == 'pro':    current_allowed = allowed_pro
         elif plan_type == 'business': current_allowed = allowed_business
         
         if mode not in current_allowed and not is_admin:
-            return jsonify({"error": "UPGRADE_REQUIRED", "message": f"The {mode.replace('_',' ').title()} tool is available on {('Pro' if mode in allowed_pro else 'Business')} plans."}), 403
+            upgrade_target = 'Pro' if mode in allowed_pro else 'Business'
+            return jsonify({"error": "UPGRADE_REQUIRED", "message": f"The {mode.replace('_',' ').title()} tool requires the {upgrade_target} plan."}), 403
 
-        # Rate limiting / Usage checks (Bypassed for Admins)
+        # ── Usage / Rate limiting (admins bypass all limits) ─────────────────────
         if not is_admin:
             if not is_subscribed:
-                c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ?", (user_id,))
-                if c.fetchone()[0] >= 1:
-                    return jsonify({"error": "LIMIT_REACHED", "message": "Free trial expired."}), 403
-            elif plan_type == 'starter' and mode == 'idea':
-                # 10 generations per week... (omitting complex date logic for brevity, keeping simple check)
-                pass
+                # FREE PLAN: one-time lifetime prompt
+                # Check if they've already used their free trial
+                if free_trial_used:
+                    return jsonify({
+                        "error": "LIMIT_REACHED",
+                        "message": "Your free trial has been used. Upgrade to continue growing your brand!"
+                    }), 403
+                # If this is their first use, we'll mark it below after generation succeeds
+            else:
+                # PAID PLAN: daily generation limits
+                today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                today_str = today_start.strftime("%Y-%m-%d %H:%M:%S")
+                c.execute("SELECT COUNT(*) FROM ideas WHERE user_id = ? AND timestamp >= ?", (user_id, today_str))
+                today_generations = c.fetchone()[0]
+
+                if plan_type == 'starter' and today_generations >= 3:
+                    return jsonify({"error": "LIMIT_REACHED", "message": "Starter plan: 3 prompts per day. Upgrade to Pro for more!"}), 403
+                elif plan_type == 'pro' and today_generations >= 5:
+                    return jsonify({"error": "LIMIT_REACHED", "message": "Pro plan: 5 prompts per day. Upgrade to Business for unlimited!"}), 403
+
 
         result = ""
         if mode in ['idea', 'script']:
@@ -1244,6 +1438,12 @@ def generate_content():
             # Store in DB
             c.execute("INSERT INTO ideas (user_id, business_type, idea_content) VALUES (?, ?, ?)", (user_id, business_type, result))
             conn.commit()
+
+            # Mark free trial as used (only on first successful generation for free users)
+            if not is_subscribed and not is_admin and not free_trial_used:
+                now_utc_iso = datetime.now(timezone.utc).isoformat()
+                c.execute("UPDATE users SET free_trial_used_at = ? WHERE id = ?", (now_utc_iso, user_id))
+                conn.commit()
             
             try:
                 db.collection('history').add({
@@ -1278,9 +1478,28 @@ def generate_content():
             platform = data.get('platform', 'instagram').strip()
             language = data.get('language', 'simple').strip()
             location = data.get('location', 'Global').strip()
-            result = ai_engine.generate_weekly_plan(business_type, platform, language, location, brand_tone)
+            duration = int(data.get('duration', 7))
+            
+            # Enforce duration limits by plan
+            if plan_type == 'free':
+                duration = 7
+            elif plan_type == 'starter':
+                duration = 7
+            elif plan_type == 'pro':
+                duration = min(duration, 14)
+            # business: unlimited, up to 30
+
+            result = ai_engine.generate_weekly_plan(business_type, platform, language, location, brand_tone, duration)
+
+        elif mode == 'hashtags':
+            topic = data.get('topic', '').strip()
+            count = int(data.get('count', 10))
+            size = data.get('size', 'mixed').strip()
+            platform = data.get('platform', 'instagram').strip()
+            result = ai_engine.generate_hashtags(topic, platform, count, size)
 
         return jsonify({"idea": result})
+
         
     except Exception as e:
         print(f"Server Error: {e}")
